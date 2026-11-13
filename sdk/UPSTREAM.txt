@@ -1,0 +1,8 @@
+Source : https://github.com/aebischer/Enshrouded-ModLoader
+Commit : b0d1aa994a0b0ba4c526f5c384eb659fcaa313f6
+Contrat : SDK V1 / ABI 1, chargeur 0.6.9.
+Fichiers copiés sans modification : include/enshrouded_mod.h, STANDARD_V1.txt.
+
+Cette copie épinglée permet de compiler CarryOn indépendamment du dossier
+local du chargeur. Ne pas modifier l'ABI dans ce dépôt. Pour actualiser le SDK,
+reprendre les fichiers du dépôt amont, consigner le commit et relancer les tests.
