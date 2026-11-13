@@ -43,3 +43,21 @@ monde du chargeur. Elles ne produiront d'effet qu'après intégration native.
 Le SDK fournit l'intégration au chargeur, pas une API de coffres.
 Le support multijoueur et serveur dédié demande une intégration distincte ;
 il n'est pas annoncé pour cette version.
+
+## Pince et recette : préparation du contenu
+
+L'icône retenue est dans [assets/item/transport-pincer.png](assets/item/transport-pincer.png).
+La recette demandée est une pince pour une ferraille, en fabrication manuelle,
+juste après le marteau et la baguette d'invocation.
+
+Les transformations des catalogues natifs sont implémentées et testées sur des
+copies des données du jeu. **L'objet n'est pas encore enregistré dans le jeu.**
+Le raccordement natif et les essais de fabrication restent nécessaires avant
+installation ; voir [l'état détaillé](docs/crafting-progress.txt).
+
+Les tests de contenu, indépendants des tests SDK, se lancent ainsi :
+
+    tools\test-content.cmd CHEMIN_REGISTRE_OBJETS CHEMIN_REGISTRE_RECETTES CHEMIN_BUNDLE_UI
+
+Ils utilisent des extractions locales du client épinglé, non redistribuées
+dans ce dépôt, et ne modifient pas les fichiers du jeu.

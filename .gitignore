@@ -5,3 +5,5 @@
 *.pdb
 *.lib
 *.exp
+*.png
+!/assets/item/transport-pincer.png

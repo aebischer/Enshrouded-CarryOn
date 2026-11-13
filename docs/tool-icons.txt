@@ -1,0 +1,34 @@
+Icônes d'outils — inspection locale du 13 novembre 2026
+
+Méthode : lecture des ressources UiTextureResource (type 0xf9e86997) de
+enshrouded.kfc_resources, résolution du contenu dans les conteneurs .dat,
+décodage du premier niveau BC7 et inspection visuelle. Aucun fichier du jeu
+modifié. Les images extraites sont conservées hors du dépôt, dans le dossier
+work/tool-icons du projet parent.
+
+Résultats mesurés
+- Tool_Quickbuilder_Hammer_icon : 200 x 200, BC7 UNORM (0x91), 8 niveaux mip,
+  contenu de 53 728 octets. Alpha de 0 à 255.
+- Tool_Quickbuilder_Hammer_Improved_icon : mêmes dimensions, format, niveaux
+  et identifiant de contenu que le marteau standard.
+- Tool_T0_Pickaxe_Stone_Grassland_icon : 256 x 256, BC7 UNORM, 9 niveaux mip,
+  contenu de 87 408 octets. Alpha de 0 à 255.
+- Tool_Building_Screwdriver_icon : 256 x 256, BC7 UNORM, 9 niveaux mip,
+  contenu de 87 408 octets. Alpha de 0 à 255.
+
+Style observé
+Objet en volume, matériaux lisibles (bois, métal, pierre), silhouette diagonale,
+manche vers le bas-gauche et tête vers le haut-droit. Détail concentré sur
+l'outil, marge transparente. Pas de texte ni numéro de raccourci dans l'image.
+Le quadrillage bleu est intégré à l'image du marteau ; il n'apparaît pas dans
+les images de la pioche et du tournevis. Ne pas le confondre avec le cadre
+de sélection de la barre d'outils.
+
+Proposition de travail pour CarryOn
+Créer un original carré à haute résolution, avec transparence, puis préparer
+un PNG RGBA 256 x 256. Ce PNG est un format d'auteur/intermédiaire ; les icônes
+inspectées sont stockées dans les archives en BC7 avec mipmaps, pas en PNG.
+La conversion ou la fourniture RGBA en mémoire dépendra du chemin d'intégration
+retenu dans CarryOn. Rien dans le SDK ABI 1 ne charge automatiquement une icône.
+Conserver le cadre de case, les touches et les états de sélection à l'interface.
+Le dessin précis de l'outil CarryOn reste à décider.

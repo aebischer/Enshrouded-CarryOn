@@ -1,0 +1,23 @@
+{
+  "schema": "carryon-authored-item-v1",
+  "name_fr": "Pince de transport",
+  "description_fr": "Permet de déplacer les coffres avec leur contenu et les objets compatibles.",
+  "item_guid_bytes": "25f0306f96e4484998ae7be76dbb24a1",
+  "recipe_guid_bytes": "027bfcad48de5943b64eb85b4b15fd63",
+  "icon_guid_bytes": "af2631b44931884b97f5addff63b774a",
+  "icon": "transport-pincer.png",
+  "icon_width": 200,
+  "icon_height": 200,
+  "crafting": {
+    "workshop_id": 0,
+    "output_count": 1,
+    "ingredients": [
+      {
+        "native_debug_name": "Material_T1_Metal_Scraps",
+        "guid_bytes": "6698bf4f397d7344b3f1b9d03a55ca83",
+        "count": 1
+      }
+    ],
+    "menu_after": ["Tool_Quickbuilder_Hammer", "NpcSummoner_Intro"]
+  }
+}

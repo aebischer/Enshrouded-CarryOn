@@ -1,0 +1,43 @@
+Fabrication de la pince — travail en cours, 13 novembre 2026
+
+Demande retenue
+- Nom : Pince de transport.
+- Icône approuvée : assets/item/transport-pincer.png, PNG RGBA 200 x 200.
+- Fabrication manuelle, quantité produite 1, coût 1 ferraille.
+- Ordre : marteau de construction, baguette d'invocation, pince.
+- Activation par monde avec le chargeur et son SDK ABI 1.
+
+Implémenté et testé hors processus du jeu
+src/content_catalog.h construit des copies des ressources natives :
+- ajout d'une identité stable au registre d'objets sans collision ;
+- ajout de recette manuelle, un seul ingrédient / une seule unité ;
+- insertion dans la liste native immédiatement après les deux outils.
+Les tableaux relatifs déplacés sont reconstruits avec leurs enfants.
+Les ressources tronquées, les ancres absentes et les doubles insertions sont
+refusées. Les tests comparent aussi toutes les recettes et tous les noms
+préexistants pour vérifier leur conservation.
+
+Validation effectuée sur les copies locales des ressources du client épinglé :
+4 213 objets et 2 542 recettes préexistants préservés. L'ordre manuel obtenu
+est bien marteau -> baguette -> pince. Aucun fichier du jeu modifié.
+
+À raccorder avant une version installable
+- Fourniture de l'ItemInfo de la pince, avec comportement propre, texte français
+  et identité persistante. Ne pas livrer une copie de marteau qui construit.
+- Enregistrement de l'icône et transfert de ses pixels vers les textures natives.
+- Raccordement des catalogues au jeu lors du chargement du mod.
+- Prise en charge des données déjà chargées : le bundle UI est déjà utilisé
+  par le chargeur dans les menus, avant Initialize du mod au lancement du monde.
+  Un simple hook des lectures futures ne suffit pas à remplacer ce menu en cache.
+- Vérification de fabrication effective, coût, position, icône, inventaire,
+  sauvegarde/rechargement et désactivation du mod.
+- Le déplacement de coffres reste lui aussi à intégrer et à tester.
+
+L'initialisation actuelle reste refusée tant que ce raccordement n'est pas prêt.
+Le succès du validateur SDK ne signifie pas que l'objet est déjà disponible
+en jeu. Aucune DLL de ce jalon n'a été installée.
+
+Les identifiants hexadécimaux consignés dans assets/item/transport-pincer.json
+sont les octets en mémoire, pas la notation GUID avec tirets.
+Le JSON décrit le contenu du projet ; ce n'est pas une extension au manifeste
+standard du chargeur, qui reste inchangé.
