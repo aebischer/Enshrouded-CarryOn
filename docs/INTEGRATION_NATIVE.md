@@ -1,3 +1,6 @@
+Note historique : ce document décrit les étapes de développement à sa date.
+Pour le fonctionnement actuel et les limites connues, consulter ../README.md.
+
 Recherche native — 13 novembre 2026
 
 Statut : inspection statique préliminaire, aucun hook installé.

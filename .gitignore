@@ -7,3 +7,5 @@
 *.exp
 *.png
 !/assets/item/transport-pincer.png
+!/assets/pincer3d/source/*.png
+!/assets/pincer3d/preview.png

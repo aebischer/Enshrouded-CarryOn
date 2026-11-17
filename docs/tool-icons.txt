@@ -1,3 +1,6 @@
+Note historique : ce document décrit les étapes de développement à sa date.
+Pour le fonctionnement actuel et les limites connues, consulter ../README.md.
+
 Icônes d'outils — inspection locale du 13 novembre 2026
 
 Méthode : lecture des ressources UiTextureResource (type 0xf9e86997) de

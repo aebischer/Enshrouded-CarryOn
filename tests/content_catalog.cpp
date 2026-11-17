@@ -9,6 +9,9 @@ template<class F> void rejects(F fn){bool rejected=false;try{fn();}catch(const s
 int main(int argc,char** argv) {
  try {
     CHECK(argc==4);
+    Bytes cap(16*1024*1024-1);const auto sizeBeforeAppend=cap.size();
+    rejects([&]{append(cap,Bytes{1});});CHECK(cap.size()==sizeBeforeAppend);
+    CHECK(append(cap,{})==16*1024*1024&&cap.size()==16*1024*1024);
     const Bytes items=read(argv[1]),recipes=read(argv[2]),menu=read(argv[3]);
     const auto newItems=add_item_registry(items),newRecipes=add_recipe_registry(recipes),newMenu=add_crafting_menu(menu);
     const auto oldRefs=array(items,0,16),newRefs=array(newItems,0,16);
@@ -37,6 +40,9 @@ int main(int argc,char** argv) {
     }
     const size_t row=newRows.at+oldRows.count*168;
     CHECK(equal(newRecipes,row,Recipe));CHECK(u32(newRecipes,row+36)==0);
+    CHECK(u32(newRecipes,row+0x38)==0&&u32(newRecipes,row+0x3c)==0);
+    CHECK(newRecipes[row+0xa0]==0&&newRecipes[row+0xa1]==0&&newRecipes[row+0xa2]==1);
+    CHECK(u32(newRecipes,row+0x50)==0x6807c65f&&u32(newRecipes,row+0x5c)==0x71ee0e45);
     auto in=array(newRecipes,row+40,48),out=array(newRecipes,row+48,24);
     CHECK(in.count==1 && out.count==1);
     CHECK(equal(newRecipes,in.at,Scrap) && u32(newRecipes,in.at+20)==1);

@@ -22,6 +22,8 @@ inline Guid guid(const char* hex) {
     return out;
 }
 inline const Guid Item=guid("25f0306f96e4484998ae7be76dbb24a1");
+inline const Guid ItemName=guid("c8ac326cfded0042a1097313127ef0fb");
+inline const Guid DecorPlacementName=guid("e31f8594ac674fa1a57b22fa99871a2d");
 inline const Guid Recipe=guid("027bfcad48de5943b64eb85b4b15fd63");
 inline const Guid Icon=guid("af2631b44931884b97f5addff63b774a");
 inline const Guid Scrap=guid("6698bf4f397d7344b3f1b9d03a55ca83");
@@ -58,9 +60,12 @@ inline Array array(const Bytes& b,size_t field,size_t stride) {
     return {at,count};
 }
 inline size_t append(Bytes& b,const Bytes& data) {
-    if(b.size()>16*1024*1024 || data.size()>16*1024*1024-b.size())
+    constexpr size_t limit=16*1024*1024;
+    if(b.size()>limit)throw std::runtime_error("native resource size limit");
+    const size_t aligned=(b.size()+3)&~size_t(3);
+    if(aligned>limit || data.size()>limit-aligned)
         throw std::runtime_error("native resource size limit");
-    b.resize((b.size()+3)&~size_t(3));
+    b.resize(aligned);
     const size_t at=b.size();b.insert(b.end(),data.begin(),data.end());return at;
 }
 inline void point(Bytes& b,size_t field,size_t at,uint32_t count) {
@@ -121,9 +126,17 @@ inline Bytes add_recipe_registry(const Bytes& source) {
         }
     }
     const size_t row=rowsAt+recipes.count*stride;
-    std::memcpy(out.data()+row,source.data()+model,stride);
+    // RecipeInfo is initialized explicitly. Relative children are built below;
+    // no workshop, energy, shelter, upgrade, level or blueprint data is copied.
+    // Preserve the two validated manual-tool progression queries deliberately.
+    // Their semantic names are not exposed by the runtime registry.
+    constexpr uint32_t ManualToolKnowledge=0x6807c65f,ManualToolCompletion=0x71ee0e45;
+    put32(out,row+0x50,ManualToolKnowledge);out[row+0x58]=2;
+    put32(out,row+0x5c,ManualToolCompletion);out[row+0x64]=2;
+    out[row+0xa2]=1; // showIsImportantLabel, as for native manual tools
     putGuid(out,row,Recipe);put32(out,row+16,hash(Recipe));
-    // Preserve native manual-craft timing and progression checks of the hammer.
+    putGuid(out,row+104,ItemName); // do not inherit the hammer's recipe name
+    // Manual crafting has zero duration; one scrap produces one pincer.
     Bytes ingredient(48);putGuid(ingredient,0,Scrap);
     put32(ingredient,16,hash(Scrap));put32(ingredient,20,1);
     size_t at=append(out,ingredient);point(out,row+40,at,1);

@@ -1,5 +1,6 @@
 #include "enshrouded_mod.h"
 #include "configuration.h"
+#include "native_content.h"
 #include <mutex>
 
 namespace {
@@ -12,10 +13,12 @@ ENSHROUDED_MOD_EXPORT int ENSHROUDED_MOD_CALL EnshroudedModConfigure(
     try {
         std::lock_guard<std::mutex> lock(state_mutex);
         configured=false;
+        carryon::native::configureTransport(false,false,false,false);
         carryon::Configuration next;
         if(!carryon::parse(world_id,settings_utf8,next))
             return ENSHROUDED_MOD_FAILURE;
         configuration=next;
+        carryon::native::configureTransport(next.move_chests,next.inspect_objects,next.move_objects,next.move_interactive);
         configured=true;
         return ENSHROUDED_MOD_SUCCESS;
     } catch (...) {return ENSHROUDED_MOD_FAILURE;}
@@ -32,9 +35,6 @@ ENSHROUDED_MOD_EXPORT int ENSHROUDED_MOD_CALL EnshroudedModInitialize(
             if(!configured || std::strcmp(configuration.world.data(),context->world_id)!=0)
                 return ENSHROUDED_MOD_FAILURE;
         }
-        // Integration milestone only. No guessed native calls or world mutation.
-        // Replace this refusal only when the native relocation path is verified.
-        context->write_log("CarryOn 0.1.0-dev: native object relocation is not implemented; initialization refused.");
-        return ENSHROUDED_MOD_FAILURE;
+        return carryon::native::initialize(context->write_log) ? ENSHROUDED_MOD_SUCCESS : ENSHROUDED_MOD_FAILURE;
     } catch (...) {return ENSHROUDED_MOD_FAILURE;}
 }

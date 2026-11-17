@@ -1,3 +1,6 @@
+Note historique : ce document décrit les étapes de développement à sa date.
+Pour le fonctionnement actuel et les limites connues, consulter ../README.md.
+
 Périmètre CarryOn — 13 novembre 2026
 
 Demandé : prendre et redéposer les coffres avec leur contenu, puis les autres
@@ -33,3 +36,19 @@ deux prises simultanées, vérifier droits et versions, synchroniser l'état.
 Tester déconnexion, mort et redémarrage. ABI 1 n'offre actuellement ni réseau
 ni événements de cycle de monde : ne pas prétendre qu'une DLL chargée côté
 client fournit déjà ce support.
+
+Interaction retenue — ciblage avec la pince
+Quand le mode transport de la pince est actif, viser un objet déplaçable avec le réticule
+le sélectionne automatiquement et le met en évidence dans le style natif.
+Une seule cible à la fois. La sélection suit la visée et disparaît lorsqu'on
+vise ailleurs, range la pince ou ouvre un menu. Le simple survol ne déplace
+rien et ne modifie ni l'objet ni son inventaire.
+Premier périmètre : coffres pris en charge, selon l'option du monde. Une cible
+doit être visible et à portée ; ne pas sélectionner à travers un obstacle.
+La prise sera une action distincte de cette présélection.
+
+Évolution retenue : la pince équipée propose Tab pour entrer en mode transport.
+Le ciblage est actif uniquement dans ce mode. Tab ou Échap le quittent.
+État 0.1.1-dev : raccordement implémenté, tests hors jeu réussis, essais visuels
+à effectuer par le joueur. Voir RECHERCHE-CIBLAGE.md pour les limites et les
+points natifs employés. IsBlueprint et les actions de destruction restent retirés.

@@ -1,0 +1,33 @@
+{
+  "model": "9016531065fed65fbf82c9096d472e34",
+  "material": "4b50cec646cf515caec390230074b23b",
+  "template": "5e52f7b0ac078d53b18d237b5de7fe8c",
+  "native_orb": "1973ad464d14b043a9ee842d1c2355c9",
+  "orb_local_position": [
+    -0.014,
+    0.209,
+    0.0
+  ],
+  "vertices": 21000,
+  "triangles_per_lod": [
+    5000,
+    1500,
+    500
+  ],
+  "bounds": [
+    [
+      -0.16229392720222474,
+      -0.17423279715538026,
+      -0.03322470320224762
+    ],
+    [
+      0.05979111177682877,
+      0.44685576988220216,
+      0.03345482928514481
+    ]
+  ],
+  "pack_bytes": 4050584,
+  "resources": 3,
+  "contents": 8,
+  "sha256": "78a8d3e4e7543896d5e62e1b6cfe5faa7e4a19627c8b82d9db562feb09e0d05f"
+}

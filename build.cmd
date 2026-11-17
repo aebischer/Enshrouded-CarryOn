@@ -1,24 +1,33 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if not exist "%vswhere%" (
- echo Visual Studio Installer with C++ x64 tools is required.
- exit /b 1
-)
-for /f "usebackq tokens=*" %%i in (`"%vswhere%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "vsroot=%%i"
-if not defined vsroot exit /b 1
-call "%vsroot%\VC\Auxiliary\Build\vcvars64.bat"
+call "%~dp0tools\vcvars.cmd"
 if errorlevel 1 exit /b 1
 if not exist build mkdir build
 if not exist dist\Mods\carryon mkdir dist\Mods\carryon
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\embed-icon.ps1
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\embed-texts.ps1
+if errorlevel 1 exit /b 1
+rc /nologo /fo build\pincer_model.res src\pincer_model.rc
+if errorlevel 1 exit /b 1
 pushd build
-cl /nologo /std:c++17 /utf-8 /EHsc /O2 /MT /W4 /WX /LD /I..\sdk\include ..\src\carryon.cpp /Fe:..\dist\Mods\carryon\carryon.dll /link /IMPLIB:carryon.lib
+cl /nologo /O2 /MT /c /I..\third_party\minhook\include ..\third_party\minhook\src\buffer.c ..\third_party\minhook\src\hook.c ..\third_party\minhook\src\trampoline.c ..\third_party\minhook\src\hde\hde64.c
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /utf-8 /EHsc /O2 /MT /W4 /WX /LD /I..\sdk\include /I..\third_party\minhook\include /I. ..\src\carryon.cpp ..\src\native_content.cpp buffer.obj hook.obj trampoline.obj hde64.obj pincer_model.res /Fe:..\dist\Mods\carryon\carryon.dll /link /IMPLIB:carryon.lib
 if errorlevel 1 exit /b 1
 cl /nologo /std:c++17 /utf-8 /EHsc /O2 /MT /W4 /WX /I..\sdk\include ..\tests\integration.cpp /Fe:integration.exe
 if errorlevel 1 exit /b 1
 integration.exe
 if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /utf-8 /EHsc /O2 /MT /W4 /WX ..\tests\transport_selection.cpp /Fe:transport_selection.exe
+if errorlevel 1 exit /b 1
+transport_selection.exe
+if errorlevel 1 exit /b 1
+cl /nologo /std:c++17 /utf-8 /EHsc /O2 /MT /W4 /WX ..\tests\transport_move.cpp /Fe:transport_move.exe
+if errorlevel 1 exit /b 1
+transport_move.exe
+if errorlevel 1 exit /b 1
 popd
-copy /y src\carryon.dll.mod dist\Mods\carryon\carryon.dll.mod >nul
+rem Manifest generated and validated by embed-texts.ps1.
 exit /b %errorlevel%
