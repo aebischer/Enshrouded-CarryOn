@@ -2,6 +2,7 @@
 #include "content_catalog.h"
 #include "MinHook.h"
 #include "pincer_pixels.h"
+#include "enshrouded_i18n.h"
 #include "carryon_texts.h"
 #include "transport_selection.h"
 #include "transport_move.h"

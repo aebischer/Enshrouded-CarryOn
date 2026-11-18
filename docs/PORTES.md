@@ -1,62 +1,60 @@
-# Objets utilisables : portes — 0.1.40
+# Usable objects: doors — introduced in 0.1.40
 
-Le réglage par monde `move_interactive` (Objets utilisables) est indépendant de
-Décors, Coffres et Debug. Les quatre réglages sont traduits dans quinze langues.
-Première prise en charge : portes animées, pas encore puits et autres appareils.
+The per-world `move_interactive` setting is independent of Decor, Chests and
+Debug. All four labels are translated into 15 languages. Doors were the first
+interactive family; wells were added later in 0.1.43.
 
-## Contrat natif observé
+## Observed native contract
 
-La porte visée est `Prop_Door_Small_Castle`, template
-`550d7a506569c348bc33efdf9fb894d4`, entité serveur 1407. Son battant physique est
-l’entité 3828, `Door_Collision_Small_Wooden`, template
-`8b170735e07e6044b0f3be80a837adba`. La porte est de famille **Switch (10)**,
-et non Prop (8). Ce point est vérifié dans la réflexion native et la ressource.
+Observed door: `Prop_Door_Small_Castle`, template
+`550d7a506569c348bc33efdf9fb894d4`, server entity 1407. Its physical leaf was
+entity 3828, `Door_Collision_Small_Wooden`, template
+`8b170735e07e6044b0f3be80a837adba`. The root is **Switch (10)**, not Prop (8),
+verified through reflection and the native resource.
 
-La porte possède Collider (24 octets), ClientCollider (16), ServerToggleState,
-InteractionToggle, ServerAnimationGraphSlotComponent et DynamicSubEntities
-(16 identifiants). L’enfant possède ServerSlotAttachment (112 octets), avec
-l’identité du parent à +44, et son propre Collider. Ses données DoNotSave sont
-gérées par le cycle natif des sous-entités ; le mod ne les crée ni ne les détruit.
+Components: Collider (24 bytes), ClientCollider (16), ServerToggleState,
+InteractionToggle, ServerAnimationGraphSlotComponent and DynamicSubEntities
+(16 IDs). The child has ServerSlotAttachment (112 bytes), parent identity at
++44, and its own Collider. Native sub-entity lifetime owns its DoNotSave data;
+the mod neither creates nor destroys the child.
 
-La classification charge les composants du template, pas une liste de noms.
-Elle exige Switch, InteractionToggle, ServerAnimationGraphSlotComponent,
-SubEntities et Collider, sans DoNotSave. Un objet interactif non pris en charge
-ne passe pas par Décors pour contourner le réglage.
+Classification reads template components, not a name list. It requires Switch,
+InteractionToggle, ServerAnimationGraphSlotComponent, SubEntities and Collider,
+without DoNotSave. Unsupported interactive objects cannot bypass this gate
+through the Decor setting.
 
-## Déplacement
+## Movement
 
-Le snapshot serveur vérifie l’état d’ouverture, les enfants, leurs identités,
-leurs handles de collision et leurs attaches locales. Un changement pendant
-l’aperçu invalide la transaction. Les colliders racines doivent employer une
-ressource unique, le setup 0 et le slot racine ; les autres montages sont refusés.
+The server snapshot checks opening state, children, identities, collision handles
+and local attachments. Changes during preview invalidate the transaction. Root
+colliders must use one resource, setup 0 and the root slot; other arrangements
+are refused.
 
-Le commit conserve l’entité principale et son état, déplace sa transformation et
-sa collision via le gestionnaire natif partagé. La distinction statique/mobile
-du record de collision est vérifiée. Le marquage path-grid respecte isPathBlocker.
-Le rendu et la collision client sont synchronisés avec la transformation répliquée.
+Commit preserves the root and state, moves transform/collision through the common
+native manager, checks static/dynamic record type and respects isPathBlocker for
+path-grid marking. Client render/collision follows the replicated transform.
 
-Les enfants restent attachés : `server_slot_attachment` puis
-`server_slot_attachment_write` (0x349aa0 / 0x34a120) mettent à jour leurs
-transformations ; `move_colliders` (0xa1d0c0) applique les poses animées avec
-le même déplacement natif 0xa1fdc0. Aucune translation indépendante du battant
-ni modification du graphe d’animation n’est injectée.
+Children remain attached. `server_slot_attachment` / `server_slot_attachment_write`
+(`0x349aa0` / `0x34a120`) update transforms; `move_colliders` (`0xa1d0c0`) applies
+animated poses through the same native move `0xa1fdc0`. No independent leaf
+translation or animation-graph mutation is injected.
 
-## Sauvegarde et tests
+## Persistence and tests
 
-Le dispatch 0xe187b0, famille 10, appelle 0xdc24d0 puis 0xdc5400.
-La transformation complète est copiée à 0xdc5690–0xdc56b7 ; les états natifs
-suivent dans le même enregistrement Switch. L’identité de la porte est conservée.
+Dispatch `0xe187b0`, family 10, calls `0xdc24d0` then `0xdc5400`. The full transform
+is copied at `0xdc5690–0xdc56b7`; native states follow in the same Switch record.
+Door identity is preserved.
 
-Tests hors jeu : ressource réelle de la porte de château, classification et
-descripteur de placement, réglages indépendants, états ouvert/fermé, préservation
-des attaches et du toggle, refus d’un enfant absent/changé ou d’une interaction
-pendant l’aperçu, collision/rendu racine et régressions existantes.
+Offline tests use the actual castle-door resource: classification, placement
+descriptor, independent settings, open/closed state, attachment/toggle preservation,
+missing/changed child refusal, interaction during preview, root collision/render
+and existing regressions. They do not execute the native animation engine.
 
-Ces tests n’exécutent pas l’animation du moteur. Essai en jeu nécessaire :
-déplacer la porte fermée puis ouverte, vérifier rotation, interaction des deux
-côtés, collisions du battant et absence de collision à l’ancienne position ;
-sauvegarder/recharger, vérifier une seule porte fonctionnelle et la déplacer
-à nouveau. Vérifier aussi Objets utilisables désactivé avec Décors activé, puis
-l’inverse. Les limites de claim restent applicables.
+Manual checks: move both open and closed doors, rotate, interact from both sides,
+verify leaf collision and no collision at the old location; save/reload, find
+one functional door and move it again. Test Usable objects off with Decor on,
+and vice versa. Claim limits still apply.
 
-Retour utilisateur du 17 novembre 2026 : déplacement des portes fonctionnel. La conservation après rechargement n’a pas été confirmée séparément.
+User feedback on November 17 confirmed door movement. Persistence after reloading
+was not separately confirmed in that report. A lock-prompt/opening discrepancy
+was also reproduced without CarryOn and left for investigation by the game developers.

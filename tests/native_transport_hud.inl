@@ -41,6 +41,7 @@ static void testTransportZoneBorders() {
  std::puts("PASS: native zone borders while pincer equipped, before/after Tab; native state preserved; tool changes, menus, stale and world changes.");
 }
 static void testTransportHud() {
+ checkCatalogue(CarryOnTexts);
  testTransportZoneBorders();
  transportZoneQuery=&testArea;transportAltarQuery=&testAltar;
  Byte point[24]{},zones[8]{};write<int64_t>(point,0,-17ll*4294967296ll);
@@ -51,7 +52,7 @@ static void testTransportHud() {
  testAltarAllowed=true;testAreaAllowed=false;testZoneCalls=0;
  CHECK(!transportZoneAllows(zones,point));CHECK(testZoneCalls==1);
  testAreaAllowed=true;
- for(uint32_t lang=0;lang<15;++lang) {
+ for(const auto lang:enshrouded::i18n::supportedLanguages) {
   for(const auto key:{"transport.grab","transport.place","transport.finish"}) {
    const auto caption=enshrouded::i18n::find(CarryOnTexts,key,lang);
    CHECK(caption&&*caption);

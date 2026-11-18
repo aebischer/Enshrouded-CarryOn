@@ -1,130 +1,106 @@
-# Décors sans ItemInfo de placement — 0.1.37
+# Decor without native placement ItemInfo
 
-Premier modèle : `Prop_Destructible_Villageprops_bottles_12`, GUID
-`ee386f839f792f4fa64f4a31593a2a1a`. Son collider natif est une boîte de
-30 × 66 × 30 cm, centrée à 33 cm au-dessus du pivot. Aucun ItemInfo natif
-ne référence ce modèle dans le catalogue examiné.
+First model: `Prop_Destructible_Villageprops_bottles_12`, GUID
+`ee386f839f792f4fa64f4a31593a2a1a`. Its native collider is a 30 × 66 × 30 cm
+box centred 33 cm above the pivot. No ItemInfo in the inspected catalogue
+references this model.
 
-## Adaptateur commun
+## Shared adapter
 
-Le catalogue natif est consulté en premier. Pour un Prop dynamique éligible au paramètre Décors
-mais dépourvu de descripteur, `floor_placement.h` construit un
-descripteur complet privé à partir du profil natif de pose au sol du comptoir
-(`e3a56abbb97f3946ad1fbd266c5ccace`). Ce profil fournit les commandes et les
-règles de sol ; ses dimensions et son modèle sont remplacés par ceux de la cible.
-Les tableaux de collisions sont repris depuis la ressource du modèle, avec
-leurs enfants et leurs références relatives. Une copie du seul en-tête serait
-invalide. Les ingrédients et la consommation d’objets sont désactivés.
+The native catalogue is checked first. For eligible dynamic Props without a
+descriptor, `floor_placement.h` builds a complete private descriptor from the
+counter's native floor-placement profile (`e3a56abbb97f3946ad1fbd266c5ccace`).
+This supplies controls and floor rules; dimensions/model are replaced by the
+target's. Copy collision arrays with their children and relative references:
+a header-only copy would be invalid. Ingredients and item consumption are disabled.
 
-Les bounds de placement et d’alignement sont calculés à partir de toutes les
-formes : boîtes, sphères, capsules, cylindres et capsules effilées. La réflexion
-native confirme leurs champs et le parseur indépendant confirme l’axe Y et la
-longueur totale du segment des capsules. Les sphères restent invariantes par
-rotation ; les capsules et cylindres utilisent leur fonction de support. Les
-collisions originales restent intactes pour la validation native.
+Placement/alignment bounds include boxes, spheres, capsules, cylinders and tapered
+capsules. Native reflection verifies fields; an independent parser verifies the
+Y axis and full capsule segment length. Spheres are rotation-invariant; capsules
+and cylinders use their support functions. Native validation retains the original
+collision shapes.
 
-Les dimensions signées présentes dans les ressources (y compris le comptoir)
-sont prises en valeur absolue pour calculer une enveloppe. Les ressources de
-collision vides sont ignorées si d’autres contiennent de la géométrie. Sans
-aucune forme, ou en présence de données invalides ou d’une forme inconnue, le
-modèle est refusé. Le composant `DoNotSave` interdit le placement de secours.
-L’activation de Décors ne rend pas sauvegardable une entité qui ne l’est
-pas, et ne transforme pas un assemblage sans collision propre en objet unique.
+Signed resource dimensions are converted to absolute values for the envelope.
+Empty collision resources are ignored if others provide geometry. No shapes,
+invalid data or unknown shapes cause refusal. DoNotSave blocks fallback placement.
+Enabling Decor cannot make a nonpersistent entity persistent or turn a collisionless
+assembly into a single movable object.
 
-Le cache possède les allocations pour toute la durée du processus. Les modèles
-partagent l’ID numérique du profil mais sont résolus par leur GUID propre, côté
-client comme côté serveur. Aucun nouvel objet d’inventaire n’est enregistré.
-Les blobs ne sont pas supprimés au changement de monde, car les callbacks natifs
-d’entrée peuvent conserver leur adresse entre deux frames.
+The cache owns published allocations for the process lifetime. Models share the
+profile's numeric ID but resolve through their own GUIDs on client/server.
+No inventory item is registered. Blobs survive world changes because native input
+callbacks may retain their addresses between frames.
 
-## Déplacement et persistance
+## Movement and persistence
 
-Le parcours reste celui des coffres et du comptoir : aperçu distinct, validation
-native de la destination dans la même claim, puis modification de l’entité
-existante et synchronisation des collisions et du rendu. Les composants du décor
-restent en place, notamment le confort lorsqu’il existe.
+Preview, native destination validation and commit use the common chest/counter
+path. Existing entities and components—including comfort—are preserved, with
+collision/render synchronization. Initial same-claim support was later extended
+to authorized cross-claim transport; see [teleportation](TELEPORTATION.md).
 
-Les Props dynamiques de famille 8 passent par le sérialiseur natif déjà étudié
-dans RECHERCHE-DECORS.md : identité du template et CurrentTransform complet.
-L’adaptateur ne crée pas une copie permanente et ne supprime pas l’original.
-Les instances statiques encodées dans la scène restent exclues.
+Dynamic family-8 Props use the native serializer for template identity and full
+CurrentTransform. No permanent copy is spawned and the original is not deleted.
+Static instances encoded in the scene remain excluded.
 
-## Validation
+Tests use local bottle fixtures, real and rotated bounds, relative offsets,
+malformed geometry, shared caches, preview/validation/commit, native refusals,
+identity changes, render/collision and authoritative transform preservation.
+Manually verify floor contact, rotation, cancel, claim refusal and exactly one
+instance at the saved/reloaded destination, followed by another move.
 
-`tools/validate.ps1` ajoute l’extraction native des bouteilles aux fixtures locales
-(non publiées). Tests : bounds réels et boîte tournée, intégrité des offsets,
-géométrie malformée, cache partagé entre modèles, aperçu/validation/commit,
-refus natifs et changement d’identité, collisions/rendu et conservation de la
-transformation serveur. Les régressions coffre/comptoir restent exécutées.
+## 0.1.36: stable detached bottles
 
-Ces tests hors jeu ne remplacent pas l’essai réel : déplacer les bouteilles,
-vérifier leur aperçu et leur contact au sol, sauvegarder/quitter normalement,
-recharger et vérifier une seule instance à destination, puis la déplacer à
-nouveau. Tester aussi rotation, annulation et refus hors claim.
+Server sample from bottle 2853 on November 16:
+AttachToSurface `ffffffffffffff7f0000000001000000`.
+Native states: 0 Uninitialized, 1 Detached, 2 Attached. Requiring Attached allowed
+highlighting but blocked pickup.
 
-## Correction 0.1.36 : saisie des bouteilles détachées stables
+Stable Detached is now accepted with searchStartTime = INT64_MAX, no parent,
+destruction, added gravity or forced detachment. The state is preserved rather
+than converted. Compare the full 16-byte attachment snapshot during preview and
+before commit; any transition invalidates the transaction. Tests use the exact
+observed bytes and exercise refusal conditions.
 
-Le relevé serveur du 16 novembre (bouteille 2853) montre AttachToSurface :
-`ffffffffffffff7f0000000001000000`. La réflexion native identifie les états
-0 Uninitialized, 1 Detached, 2 Attached. Le filtre initial exigeait Attached,
-ce qui autorisait le surlignage mais bloquait la saisie de cette bouteille.
+## 0.1.37: generalized geometry
 
-Le snapshot accepte désormais aussi Detached avec searchStartTime = INT64_MAX,
-sans parent, destruction, gravité ajoutée ni détachement forcé. Il conserve cet
-état sans le convertir. Le bloc d’attachement complet est comparé pendant
-l’aperçu et avant le commit : une transition annule la transaction.
-Les tests utilisent les 16 octets du relevé réel et couvrent les refus associés.
+Of 6,282 Prop templates, boxes appear in 3,815 models, spheres in 1,611,
+capsules in 1,207 and cylinders in 2. Counts overlap for mixed shapes.
+No per-name exception is needed. Tapered capsules are decoded from reflection
+but do not occur in this corpus.
 
-## Généralisation 0.1.37
+The corpus builds 5,769 descriptors. Controlled refusals: 170 DoNotSave templates,
+240 without geometry and 103 without collider components. Numeric tests cover
+rotation, signed dimensions, asymmetric shapes, native variants and truncated
+input. Descriptor construction does not certify actual movement of every model.
 
-L’inventaire des 6 282 templates de famille Prop du client vérifié contient quatre
-formes : boîte (3 815 modèles), sphère (1 611), capsule (1 207), cylindre (2).
-Ces nombres se recoupent pour les modèles à plusieurs formes. Aucune exception
-par nom n’est nécessaire. La capsule effilée est également décodée selon la
-réflexion native, mais n’apparaît pas dans ce corpus de Props.
+## 0.1.38: objects on supports
 
-Le test de corpus construit 5 769 descripteurs. Les 513 refus sont contrôlés :
-170 templates DoNotSave, 240 sans géométrie, 103 sans composant de collision.
-Les tests numériques vérifient rotations, dimensions signées, formes asymétriques,
-conservation des variantes natives et refus des données tronquées. Les tests de
-transaction, d’attachement et de réplication sont réexécutés. La préparation d’un
-descripteur ne certifie pas un déplacement en jeu de chacun de ces modèles.
+Observed pot `Prop_Flowerpot_01_small_pink`, entity 3393, attached to sideboard
+`Prop_Furniture_Castle_Sideboard_Large_01`, entity 3372. Full attachment state:
+`ffffffffffffff7f2c0d000002000000`. Rejecting every nonzero attachmentContainerId
+blocked preview; reloading could recompute the link and hide the issue.
 
-## Correction 0.1.38 : objet posé sur un support
+Attached Props may now reference a support. Detached-with-parent, self-reference,
+destruction/gravity/forced-detach flags remain refused. The full snapshot must
+remain unchanged. The support itself is never moved.
 
-Relevé serveur : pot `Prop_Flowerpot_01_small_pink`, entité 3393, attaché au
-buffet `Prop_Furniture_Castle_Sideboard_Large_01`, entité 3372. État complet :
-`ffffffffffffff7f2c0d000002000000`. Le filtre refusait tout attachmentContainerId
-non nul avant de créer l’aperçu. Un rechargement pouvait recalculer ce lien et
-masquer le défaut après déplacement du support.
+Only after valid placement, obtain native mutable attachment access, revalidate
+it and invalidate the cached support: attachmentContainerId=0, searchStartTime=0.
+Preserve Attached and other flags. Do not call the native detach action, which
+can destroy the item or add gravity. Native support search can resume on its
+next processing/wake cycle. Neither preview nor cancellation changes attachment.
 
-Un Prop Attached peut maintenant référencer un support. Les états Detached avec
-parent, les références à soi-même et les indicateurs de destruction/gravité/
-détachement forcé restent refusés. Le snapshot capture l’état complet et annule
-la transaction s’il change pendant l’aperçu. Le support n’est jamais déplacé.
+Native evidence: attach_to_surface `0x32f990`, search `0x351340`;
+`0x3513f6` skips search for INT64_MAX, `0x3514fd` initializes a search from zero,
+`0x3516c2` writes the found ID at +8. The mod does not compute the replacement
+support cache; its actual refresh needs game observation.
 
-À la pose validée seulement, le composant d’attachement est obtenu par l’accès
-en écriture ECS natif, vérifié intégralement, puis son cache de support est
-invalidé : attachmentContainerId=0, searchStartTime=0. L’état Attached et les
-autres indicateurs restent conservés. Le code ne déclenche pas l’action native
-de détachement, qui peut détruire l’objet ou ajouter de la gravité. La recherche
-native de support peut alors reprendre à son prochain traitement/réveil.
+Tests cover the exact pot state, pickup/cancel/refusal, changed support, failed
+mutable access/expiry without partial movement, commit, visual sync and immediate
+second pickup. Manually test without moving the sideboard, then save/reload.
 
-Preuves natives : attach_to_surface à 0x32f990, recherche à 0x351340. À 0x3513f6,
-INT64_MAX court-circuite la recherche ; à 0x3514fd, zéro initialise une nouvelle
-recherche ; à 0x3516c2, l’identifiant trouvé est écrit à +8. Le nouveau cache
-n’est pas calculé par le mod et son rafraîchissement effectif reste à observer
-en jeu. Ni l’aperçu ni son annulation ne modifient l’attachement.
+## Configuration
 
-Tests : état exact du pot, saisie, annulation, refus natif, support changé en
-cours d’aperçu, échec d’accès en écriture/expiration sans déplacement partiel,
-commit, synchronisation graphique et seconde saisie immédiate sans rechargement.
-La validation complète hors jeu passe. Test en jeu conseillé : prendre le pot
-sans toucher au buffet, annuler, le reprendre et le poser, puis le reprendre
-immédiatement et vérifier la persistance après sauvegarde/rechargement.
-
-## Configuration 0.1.39
-
-Le filtrage par fichier et par nom est supprimé. Seuls les trois paramètres par
-monde restent : Décors, Coffres et Debug. Les contrôles natifs et la politique
-d’attachement restent appliqués.
+The external name/list filter was removed in 0.1.39. Decor, Chests and Debug
+remain independent, with Usable objects added for doors/wells. Native component
+and attachment checks always apply.

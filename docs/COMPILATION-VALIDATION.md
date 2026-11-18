@@ -1,31 +1,30 @@
-# Compiler et vérifier la 0.1.48
+# Build and validate CarryOn 0.1.49
 
-## Compilation autonome
+## Standalone build
 
-Cloner le dépôt privé avec un compte autorisé, ouvrir une console Windows et
-exécuter `build.cmd` à sa racine. Visual Studio C++ x64 et le SDK Windows sont
-nécessaires ; MinHook et les headers SDK sont fournis. Aucun chemin vers un
-autre dépôt n’est requis pour cette compilation et ses tests de politiques.
+Clone the private repository with an authorized account, open a Windows console
+and run `build.cmd` from its root. Visual Studio C++ x64 tools, Windows SDK and
+PowerShell are required. MinHook and SDK headers are included. Building the DLL
+and its policy tests does not require another repository.
 
-`assets/pincer3d/pincer.pack` est le pack préparé embarqué par
-`src/pincer_model.rc`. L’icône et les traductions sont transformées en données
-de compilation par les scripts `embed-*.ps1`. Les sorties restent dans
-`build` et `dist`, ignorés par Git. La DLL et le manifeste généré sous
-`dist/Mods/carryon` sont les deux fichiers à installer.
+`assets/pincer3d/pincer.pack` is embedded by `src/pincer_model.rc`. The icon and
+translations become compiler inputs through `embed-*.ps1`. Outputs stay under
+Git-ignored `build` and `dist`. Install the DLL and generated manifest from
+`dist/Mods/carryon`; the source manifest alone omits generated translations.
 
-## Validation complète avec données locales
+## Full validation with local fixtures
 
-`tools/validate.ps1` reconstruit le mod puis teste les catalogues, l’adaptateur
-natif, la mémoire, le corpus de poses, le modèle avec un décodeur indépendant
-et le paquet avec le validateur du chargeur. Il ne pilote pas le jeu.
+`tools/validate.ps1` rebuilds the mod and tests catalogues, native adapters,
+memory, the floor-placement corpus, the model through an independent decoder,
+and the package through the loader's validator. It does not control the game.
 
-Fournir explicitement les trois paramètres sur une autre machine :
+Supply these parameters on another machine:
 
-| Paramètre | Contenu |
+| Parameter | Required content |
 |---|---|
-| `-Fixtures` | Dossier des fichiers listés ci-dessous, extraits du client pris en charge |
-| `-ModelReference` | Dossier `enshrouded_tools/core` du décodeur EnshroudedBlenderTools, contenant `render_model.py` et `material.py` |
-| `-PackageValidator` | `build/validate_mod_package.exe` construit dans Enshrouded-ModLoader avec `build-sdk.cmd` |
+| `-Fixtures` | Directory containing the files below, extracted from the supported client |
+| `-ModelReference` | EnshroudedBlenderTools `enshrouded_tools/core`, including `render_model.py` and `material.py` |
+| `-PackageValidator` | ModLoader's `build/validate_mod_package.exe`, built by `build-sdk.cmd` |
 
 ```text
 resource-550d7a506569c348bc33efdf9fb894d4-0x39768775-0.bin
@@ -41,47 +40,43 @@ resource-618b3ac8dbea284d914688c4c8d9cb98-0x39768775-0.bin
 resource-0b6db1ac5b832949a2f00c6046bfc35c-0x39768775-0.bin
 ```
 
-Ces extractions ne sont pas publiées. Le nom conserve le GUID, le type et la
-partie de ressource. `extract-prop-fixtures.py` construit le corpus depuis les
-archives locales (Python et `zstandard`) :
+These game extracts are not published. Filenames preserve resource GUID, type
+and part. Build the Prop corpus from local archives with Python and `zstandard`:
 
 ```bat
 python tools\extract-prop-fixtures.py "D:\SteamLibrary\steamapps\common\Enshrouded" C:\fixtures\prop-placement-fixtures.bin
 ```
 
-Adapter les deux chemins. La préparation des autres fixtures n’est pas
-automatisée de bout en bout par le dépôt.
+Adjust both paths. Preparing the other fixtures is not automated end-to-end.
+Default validation paths assume the historical workspace: sibling `work`, a
+reference decoder under it, and the parent loader's `build` directory. Override
+these on another machine. Python is required for independent model decoding.
 
-Les valeurs par défaut de `validate.ps1` correspondent à l’espace historique :
-dossier parent `work`, référence sous ce dossier et validateur dans le `build`
-du parent. Les remplacer sur une autre machine. Python est nécessaire au test
-indépendant du modèle 3D.
+`build/validation.json` is written only after the full suite succeeds. It records
+fixture/DLL/manifest SHA-256 values, date and `gameplayTested: false`. An older
+report does not validate a changed binary; compare hashes before installation.
 
-`build/validation.json` n’est écrit qu’après réussite de toute la suite. Il
-contient les SHA-256 des fixtures, de la DLL et du manifeste, la date et
-`gameplayTested: false`. Un rapport ancien ne valide pas un nouveau binaire :
-comparer les empreintes avant installation. Les essais en jeu sont manuels.
+## Model regeneration
 
-## Sources du modèle 3D
+`assets/pincer3d/source` contains the project-supplied Meshy FBX and textures.
+`pincer.blend` is the prepared model; `mesh.json` holds mesh/LOD data;
+`build-report.json` records resource IDs and pack digest.
 
-`assets/pincer3d/source` contient le FBX Meshy fourni pour ce projet et ses
-textures. `pincer.blend` est le modèle préparé, `mesh.json` les données de
-maillage et LOD, `build-report.json` les identifiants et l’empreinte du pack.
+`prepare-pincer-model.py` (Blender) and `pack-pincer-model.py` depend on the
+historical `work/pincer3d`, prepared DDS textures and locally extracted native
+descriptors. They are not a standalone FBX-to-pack pipeline on a clean clone.
+The prepared pack makes normal `build.cmd` independent of regeneration.
+Do not publish raw game extracts.
 
-`prepare-pincer-model.py` (Blender) et `pack-pincer-model.py` utilisent le
-dossier historique `work/pincer3d`, des textures DDS préparées et des
-descripteurs natifs extraits localement. Ils ne constituent pas une chaîne
-autonome FBX → pack sur un clone vierge. Le pack préparé est fourni pour que
-`build.cmd` n’en dépende pas. Ne pas publier les extractions brutes du jeu.
+## Installation and manual checks
 
-## Installation et essais
+After validation, close the game, back up the installed files and replace only
+`Mods/carryon/carryon.dll` and `carryon.dll.mod` from `dist`. Preserve loader
+profiles and world saves. There is no separate CarryOn installer.
 
-Le dépôt ne fournit pas encore d’installateur CarryOn autonome. Après validation,
-jeu fermé, sauvegarder les deux fichiers installés puis remplacer uniquement
-`Mods/carryon/carryon.dll` et `carryon.dll.mod` par ceux de `dist`.
-Conserver les profils du chargeur et les sauvegardes de monde.
+Manually test pickup/place/cancel, rotations, tool changes, focus loss, map,
+teleportation between claims, returning to menus, save and reload. Include a
+filled chest, decor on a support, a door and a well. Offline tests certify
+neither dedicated-server nor multiplayer behavior.
 
-Vérifier manuellement saisie/pose/annulation, rotations, changement d’outil,
-perte de focus, carte, téléportation entre claims, retour au menu, sauvegarde
-et rechargement. Inclure coffre rempli, décor sur support, porte et puits.
-La validation hors jeu ne certifie pas le serveur dédié ni le multijoueur.
+See the [SDK V1 standard](../sdk/STANDARD_V1.txt) for the integration contract.

@@ -1,90 +1,68 @@
-# Comptoir de décor — intégration 0.1.30
+# Decor counter — initial integration 0.1.30
 
-## Périmètre
+This records the first decor integration. The initial single-model allowlist
+and same-claim restriction were later generalized; see the current README.
 
-Un seul modèle autorisé : `Prop_Furniture_Comfort1_Bar_01_Wood`, GUID archive
-`423c01619630d241b98a591808d9ea21`, famille Prop (8), instance dynamique.
-Les identifiants de scène (bit haut) ne sont pas admissibles.
+Model: `Prop_Furniture_Comfort1_Bar_01_Wood`, archive GUID
+`423c01619630d241b98a591808d9ea21`, dynamic Prop family 8. Scene IDs with the
+high bit set are excluded. Native placement ItemInfo:
+`e3a56abbb97f3946ad1fbd266c5ccace`, ID `0xf60b84c2`, debug name
+`Prop_Decoration_Comfort2_T1_Tavern_Counter`. Its placedEntity references this
+model exactly. No synthetic ItemInfo, recipe or inventory item is needed.
+The resource stays in its registry because internal references are relative.
 
-Le jeu fournit déjà son ItemInfo de placement :
-`e3a56abbb97f3946ad1fbd266c5ccace`, ID `0xf60b84c2`, nom de debug
-`Prop_Decoration_Comfort2_T1_Tavern_Counter`. La référence placedEntity pointe
-exactement vers ce modèle. Aucun ItemInfo synthétique, nouvelle recette ou
-nouvel objet d'inventaire n'est ajouté. La ressource reste dans son registre,
-car ses références internes sont relatives à son emplacement.
+## Execution path
 
-## Chemin d'exécution
+- Native targeting prioritizes chest slot 2, then decor slots 0/4, retaining
+  model/family checks and the three-metre reach limit.
+- Server pickup validates entity, claim and collisions. InventorySetup and
+  UsedItem are required for chests, not for the counter.
+- The initial attachment policy accepted state 2 only, without parent,
+  destruction, added gravity or forced detachment. Later attachment support
+  is described in [floor placement](POSE-AU-SOL.md).
+- Preview uses the native counter descriptor, verifies its client/server model
+  link and retains native placement solver and permission checks.
+- Commit moves the existing entity through native mutable CurrentTransform
+  access and collision movement, using the common chest transaction.
+- Client synchronization verifies model/placement identity, waits for replication,
+  then updates three render poses and collisions. Missing UsedItem must not
+  suppress this repair.
+- ComfortProvider is preserved and checked for changes during the transaction.
+  The engine updates spatial cells and recalculates comfort from the current
+  position; no artificial player bonus is applied.
+- Native Prop persistence is used: no sidecar save, destruction, duplicate or
+  scene-bit mutation. Research evidence is in [decor research](RECHERCHE-DECORS.md).
 
-- Ciblage natif : priorité au slot coffre 2, puis slots décor 0/4. Le modèle
-  exact et la famille sont vérifiés ; distance maximale de 3 mètres conservée.
-- Saisie : validation serveur de l'entité, de la claim et des collisions.
-  InventorySetup et UsedItem restent requis pour les coffres, pas pour ce comptoir.
-- Fixation : accepter uniquement l'état observé 2, sans attachmentContainerId,
-  shouldDestroy, hasAddedGravity ni enforceDetached. Aucun de ces champs n'est
-  réécrit. Les états non pris en charge sont refusés.
-- Aperçu et commandes : descripteur natif du comptoir ; vérification de son lien
-  au modèle côté client et serveur ; solveur et permissions natifs conservés.
-- Pose : même transaction que les coffres, dans la même claim, sur l'entité
-  existante. Accès mutable natif à CurrentTransform et déplacement des collisions.
-- Synchronisation client : vérifier l'identité de modèle et l'ID de placement,
-  attendre la transformation répliquée, mettre à jour les trois poses de rendu
-  et les collisions. L'absence de UsedItem ne doit pas supprimer cette tâche.
-- Confort : conserver ComfortProvider et vérifier qu'il n'a pas changé pendant
-  la transaction. Le moteur actualise les cellules spatiales et recalcule le
-  confort depuis la position courante. Aucun bonus artificiel ajouté au joueur.
-- Persistance : parcours natif Prop ; aucun fichier annexe, appel de destruction,
-  création de copie ou modification des bits de scène. Références natives dans
-  [RECHERCHE-DECORS.md](RECHERCHE-DECORS.md).
+Offline tests include real ItemInfo identity/model/bounds, target slots, rejected
+families and scene entities, no inventory/UsedItem, invalid attachment, changing
+comfort, permission/collision refusals, rotation, exactly-once commit and visual
+synchronization. Native doubles do not execute the actual save system.
 
-## Validation hors jeu
+Manual checks: pickup/cancel, rotated placement, collision and image agreement,
+comfort at the new location and away from the old one, then save/reload and a
+second move. The engine chooses the best provider per category, so another
+table may hide the difference; the observed category range is 15 metres.
+Include ordinary/magical chests and outside-claim refusal.
 
-La suite complète inclut la ressource ItemInfo extraite du jeu (identité, modèle,
-bounds), le ciblage des slots 0/4, le refus des autres modèles/familles et des
-entités de scène, l'absence d'inventaire et de UsedItem, la fixation non admissible,
-la modification du confort pendant la saisie, les refus de collision/permission,
-la rotation, le commit unique et la synchronisation rendu/collisions.
-Les tests existants des coffres, commandes, ressources et du SDK restent exécutés.
+## 0.1.31: synchronization after quantized rotation
 
-Les doubles natifs des tests ne constituent pas un test de sauvegarde du moteur.
-L'empreinte du paquet testé est enregistrée dans `build/validation.json`.
+Intermittent image retention in 0.1.30 depended on rotation. A read-only sample
+from entity 2771 on November 16 showed the correct server and replicated client
+transform, but stale RenderTransform.
 
-## Essai en jeu confié à Alain
+Requested/server quaternion: `(0, 0.5000692606, 0, 0.8659854531)`.
+Received quaternion: `(0, 0.4995411932, 0, 0.8662901521)`.
+Position difference was 0.488 mm, inside the existing tolerance. Rotation exceeded
+the old per-component 0.0001 threshold, so synchronization waited indefinitely
+for equality that network quantization would never provide.
 
-1. Viser le comptoir en mode transport ; vérifier son surlignage et son aperçu.
-2. Annuler une saisie : le comptoir doit rester inchangé.
-3. Saisir, tourner et poser dans la même claim : image et collision doivent suivre,
-   sans meuble fantôme ni blocage invisible à l'ancienne position.
-4. Vérifier le confort près du nouvel emplacement et loin de l'ancien. Le moteur
-   retient le meilleur fournisseur par catégorie : une autre table peut masquer
-   la différence. La portée observée pour cette catégorie est de 15 mètres.
-5. Sauvegarder normalement, revenir au menu et recharger : un seul comptoir à
-   destination, aucun à l'origine, confort conservé ; le déplacer une seconde fois.
-6. Vérifier également un coffre ordinaire/magique et le refus hors de la claim.
+Comparison now uses normalized angular distance up to 0.25 degrees, treating
+q and -q as equivalent. This is an acknowledgement tolerance, not a permission
+change or a complete description of the network codec. Identity, position,
+scale and validity checks remain. Render/client collision use the received
+pose; synchronization does not overwrite the server transform.
 
-État à la préparation du paquet : tests hors jeu réussis ; validation visuelle,
-confort effectif et persistance après déplacement/rechargement encore à effectuer.
-
-## Correction 0.1.31 : synchronisation après rotation
-
-Le test en jeu de la 0.1.30 a révélé un déplacement sans mise à jour du rendu,
-intermittent selon la rotation. Le relevé en lecture seule du 16 novembre sur
-l'entité 2771 montre une transformation serveur correcte et une transformation
-client répliquée, mais RenderTransform conserve l'ancienne position.
-
-Quaternion demandé/serveur : `(0, 0.5000692606, 0, 0.8659854531)`.
-Quaternion reçu : `(0, 0.4995411932, 0, 0.8662901521)`.
-L'écart de position est de 0,488 mm, dans la tolérance existante ; l'écart de
-rotation dépasse en revanche l'ancien seuil de 0,0001 par composante. La file
-attendait donc indéfiniment une égalité que la quantification réseau empêche.
-
-La comparaison utilise désormais l'écart angulaire normalisé, limité à 0,25°,
-avec équivalence de q et -q. Cette limite est une tolérance d'acquittement, pas
-une modification des permissions de pose ni une description exhaustive du codec
-réseau. Les contrôles d'identité, de position, d'échelle et de validité restent
-en place. Le rendu et les collisions client utilisent la pose réellement reçue ;
-la transformation serveur n'est pas modifiée par cette synchronisation.
-
-Régression : valeurs exactes du relevé, ancienne rotation et rotation différente
-refusées, changement d'échelle/position refusé, file conservée avant réplication
-puis terminée après réception arrondie, pour un coffre comme pour le comptoir.
-Témoin local : `work/counter-sync-live.json` ; lecteur `work/read-counter-sync.py`.
+Regression tests use the exact sample, reject stale/different rotation and
+changed scale/position, retain pending work before replication and complete it
+after rounded replication for both chests and counters. Local evidence:
+`work/counter-sync-live.json`, reader `work/read-counter-sync.py`.

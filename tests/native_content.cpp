@@ -1,6 +1,7 @@
 // Compile the adapter in the test translation unit to exercise the same hooks
 // against fake native functions, without patching any executable.
 #include "../src/native_content.cpp"
+#include "../sdk/tests/catalog_checks.h"
 #include <fstream>
 #include <iterator>
 #include <filesystem>

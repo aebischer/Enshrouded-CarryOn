@@ -1,166 +1,163 @@
-# CarryOn pour Enshrouded
+# CarryOn for Enshrouded
 
-Version de développement : **0.1.48-dev**. DLL Windows x64 pour
+Development version **0.1.49-dev**, a Windows x64 mod for
 [Enshrouded ModLoader](https://github.com/aebischer/Enshrouded-ModLoader)
-**0.6.10**, SDK V1 / ABI 1. Utilisation solo ; serveur dédié et multijoueur non certifiés.
+0.6.10 or later (tested with 0.6.11), SDK V1 / ABI 1.
+Currently intended for solo play; dedicated servers and multiplayer are not certified.
 
-## Utilisation
+Move chests with their contents and compatible world objects using craftable
+**Transport pincers**, a native placement preview and the game's placement controls.
 
-Fabriquer la **pince de transport** dans les recettes manuelles, après le marteau
-et la baguette d’invocation, avec **une ferraille**. La pince possède son icône,
-ses textes traduits, son modèle tenu en main et l’orbe orange natif à sa jonction.
+## Install without compiling
 
-1. Équiper la pince : les limites de construction apparaissent.
-2. Entrer en mode transport avec l’action native correspondante (Tab par défaut).
-3. Viser un objet compatible : il est sélectionné et surligné.
-4. Utiliser **Saisir**, ajuster l’aperçu avec les commandes natives de placement,
-   puis **Poser** lorsque l’emplacement est autorisé. Les raccourcis affichés
-   reprennent le panneau natif : ajustement, rotation, angle et accrochage.
-5. Pour un transport entre claims, ouvrir la carte pendant la saisie, se
-   téléporter vers un autre claim autorisé, puis reprendre l’aperçu et poser.
+Download the compiled ZIP from
+[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases), install
+ModLoader separately, then follow [INSTALLATION.txt](INSTALLATION.txt).
+Both repositories require an authorized GitHub account.
 
-L’objet réel reste à son emplacement d’origine jusqu’à validation de la pose.
-Le déplacement conserve l’entité et ses composants : inventaire des coffres,
-confort des décors, fonctionnement des portes et des puits compatibles.
-Annuler l’aperçu ne crée pas d’objet d’inventaire et ne déplace pas l’original.
+With the game closed, copy `Mods/carryon` into the game's `Mods` directory:
 
-La carte et le chargement de téléportation suspendent les commandes. La reprise
-exige un aperçu renouvelé ; aucune ancienne demande de pose n’est réutilisée.
-Les autres menus, la perte du premier plan et le changement d’outil quittent le
-mode transport. La mort et la destruction du monde invalident la saisie.
-Depuis 0.1.47, entrée/sortie et annulation suivent les actions natives configurées,
-plutôt que des touches physiques fixes.
+```text
+Enshrouded/
+  enshrouded.exe
+  dinput8.dll                 supplied by ModLoader
+  Mods/
+    carryon/
+      carryon.dll
+      carryon.dll.mod
+```
 
-## Réglages par monde
+Do not create `Mods/Mods`, copy the mod into `ModLoader`, or replace the loader's
+proxy. Enable CarryOn in **Edit → MODS** for the chosen world. A changed mod
+selection may require a full game restart. Preserve your world saves and profiles.
 
-Dans **Modifier → MODS → CarryOn**, le chargeur conserve séparément :
+## Use the pincers
 
-| Clé | Réglage | Défaut |
+Craft **Transport pincers** in manual crafting, after the construction hammer
+and summoning staff, using **one scrap**. The tool has its own icon, translated
+text, held model and native orange orb at the joint.
+
+1. Equip the pincers. The building-area boundary becomes visible.
+2. Enter transport mode with the native action (Tab by default).
+3. Aim at a supported object to select and highlight it.
+4. Use **Pick up**, adjust the preview using native positioning, rotation,
+   angle and snapping controls, then **Place** at a permitted location.
+5. To move between claims, open the map while carrying the preview, teleport
+   to another authorized claim, then resume the preview and place the object.
+
+The real object stays at its original location until placement is committed.
+Movement preserves its entity and components, including chest contents,
+decor comfort and supported door/well behavior. Cancelling the preview does
+not create an inventory item or move the original object.
+
+The map and teleport loading suspend commands. Resuming requires a fresh
+preview; a stale placement request is never reused. Other menus, losing focus
+or changing tools leave transport mode. Death and world destruction invalidate
+the carried selection. Entry, exit and cancellation follow the configured
+native actions rather than fixed physical keys.
+
+## Per-world settings
+
+In **Edit → MODS → CarryOn**:
+
+| Key | Setting | Default |
 |---|---|---|
-| `move_chests` | Coffres, y compris les variantes magiques compatibles | Activé |
-| `move_objects` | Décors non voxel compatibles | Activé |
-| `move_interactive` | Objets utilisables : portes et puits compatibles | Activé |
-| `inspect_objects` | Debug : nom interne, ID de cible et GUID du modèle | Désactivé |
+| `move_chests` | Chests, including supported magical variants | Enabled |
+| `move_objects` | Compatible non-voxel decor | Enabled |
+| `move_interactive` | Usable objects: supported doors and wells | Enabled |
+| `inspect_objects` | Debug: internal name, target ID and model GUID | Disabled |
 
-Les réglages et textes de l’interface sont traduits dans quinze langues.
-Le diagnostic fonctionne en mode transport, même pour une cible non déplaçable
-ou hors claim. Il dépend du résultat de la requête native ; une cible sans
-modèle résolu conserve un identifiant brut. Les cibles sont aussi journalisées.
+The inspector works in transport mode even for an immovable target or outside
+a claim. It depends on the native targeting query; unresolved models retain
+a raw ID. Targets are also logged. No editable object list is required:
+`objects.txt` is no longer read or distributed. A model name alone never grants
+movement permission; the native component contract must be compatible.
 
-Aucun fichier de liste n’est nécessaire depuis 0.1.39. `objects.txt` n’est plus
-lu ni distribué ; une ancienne copie peut être retirée. Le nom d’un modèle ne
-suffit pas à autoriser son déplacement : les composants natifs doivent être compatibles.
+All custom text covers the game's 15 interface languages. The catalogue is
+`assets/localization/texts.json`; native controls retain the game's translations.
+The build rejects a missing language/key or altered markup. Tests use the actual
+native language IDs and do not count English fallback as translation coverage.
+Saved setting keys and values are unaffected by language selection.
 
-## Objets pris en charge et limites
+## Supported objects and limits
 
-Les décors dynamiques de famille Prop doivent posséder une transformation,
-un modèle non voxel, des collisions valides et un état sauvegardable.
-Le descripteur natif de placement est privilégié. À défaut, un profil de pose
-au sol est préparé à partir des collisions : boîtes, sphères, capsules et
-cylindres, seuls ou combinés. Le confort est conservé lorsqu’il existe.
-Un objet posé sur un support peut être saisi ; le lien avec l’ancien support
-n’est invalidé qu’après une pose validée.
+Dynamic Prop decor requires a transform, a non-voxel model, valid collision data
+and persistent state. Native placement descriptors are preferred. Otherwise,
+a floor-placement profile is built from boxes, spheres, capsules and cylinders,
+alone or combined. Existing comfort is preserved. Objects resting on a support
+can be picked up; the old support link is invalidated only after a valid commit.
 
-Les modèles sans collisions, marqués `DoNotSave`, encore attachés à la scène
-ou avec des fixations non prises en charge restent refusés. Les voxels et
-les autres familles ne deviennent pas déplaçables par simple activation d’une option.
+Objects without collision geometry, marked `DoNotSave`, still scene-attached,
+or using unsupported attachments are rejected. Enabling a setting does not
+make voxels or unrelated object families movable.
 
-Les portes utilisent leur parcours natif Switch, avec état d’ouverture et liens
-des battants. Les puits sont reconnus par leur contrat de puisage (famille 13),
-sans liste de noms ; un puits utilisé par un PNJ ou un animal est refusé.
-Les autres objets fonctionnels nécessitent une étude de leurs composants.
+Doors use their native Switch path, retaining opening state and leaf links.
+Wells are identified by their water-drawing contract (family 13), without a name
+allowlist; wells in use by an NPC or animal are rejected. Other interactive
+objects require investigation of their native components.
 
-Le client pris en charge est identifié par le SHA-256 de `enshrouded.exe` :
+Supported `enshrouded.exe` SHA-256:
 
 ```text
 5D9EF2F140B8ED49E30DBEE655841B89D08BAEC20F799A1817E171A18A850C77
 ```
 
-Une mise à jour du jeu peut nécessiter une adaptation. Ne pas assimiler
-validation du manifeste, compatibilité moteur et certification multijoueur.
+Game updates may require adaptation. Package validation, engine compatibility
+and multiplayer certification are separate checks.
 
-## Compilation et installation
+## Build and validate
 
-Prérequis : Visual Studio avec C++ x64 et SDK Windows, PowerShell.
-`tools/vcvars.cmd` détecte Visual Studio via `vswhere`. Depuis la racine :
+Install Visual Studio C++ x64 tools, Windows SDK and PowerShell. `tools/vcvars.cmd`
+locates Visual Studio through `vswhere`. Run `build.cmd` from the repository root.
+It builds the DLL and runs SDK and transport-policy tests. Prepared icons,
+translations and the 3D pack are included and embedded; Blender is not needed.
 
-```bat
-build.cmd
-```
+Distribute the generated `dist/Mods/carryon` directory. The manifest in `dist`
+is generated from `src/carryon.dll.mod` and the translation catalogue; use that
+copy so the translated settings are included. Do not distribute build objects,
+personal profiles or raw game resources.
 
-Le script compile la DLL et exécute les tests SDK et politiques de transport.
-L’icône, les traductions et le pack 3D préparé sont fournis et embarqués ;
-Blender n’est pas nécessaire à cette compilation. La sortie à distribuer est :
-
-```text
-Mods/
-  carryon/
-    carryon.dll
-    carryon.dll.mod
-```
-
-Installer le chargeur séparément. Fermer le jeu, sauvegarder la version précédente,
-puis copier `dist/Mods/carryon` dans le dossier `Mods` à côté de `enshrouded.exe`.
-Ne pas copier les `.obj`, `.lib`, `.exp` ou le dossier `build`. CarryOn ne fournit
-pas son propre `dinput8.dll`. Activer ensuite CarryOn dans les mods du monde.
-Une modification de la sélection peut nécessiter une relance complète du jeu.
-
-Le manifeste distribué est généré par `tools/embed-texts.ps1` à partir de
-`src/carryon.dll.mod` et `assets/localization/texts.json` : utiliser la copie
-produite dans `dist`, qui comprend les traductions. Les paramètres restent
-stockés par le chargeur ; ne pas distribuer les profils personnels.
-
-Pour installer sans compiler, télécharger l’archive ZIP dans les
-[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases) et suivre
-`INSTALLATION.txt`. Le chargeur se télécharge séparément dans ses propres
-Releases. Les deux dépôts privés nécessitent un compte GitHub autorisé.
-
-## Validation et état des essais
-
-Avant installation, lancer la validation complète hors jeu :
+For complete offline validation:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/validate.ps1 -Fixtures C:\fixtures -ModelReference C:\reference\enshrouded_tools\core -PackageValidator C:\ModLoader\build\validate_mod_package.exe
 ```
 
-Python est requis pour la vérification indépendante du modèle 3D. Les paramètres
-et prérequis sont détaillés dans [COMPILATION-VALIDATION.md](docs/COMPILATION-VALIDATION.md).
-Les extractions de jeu utilisées par les tests ne sont pas fournies.
-`build/validation.json` consigne les empreintes du paquet testé et indique
-explicitement que les tests en jeu ne sont pas automatisés.
+Python is required for independent 3D-model verification. See
+[build and validation instructions](docs/COMPILATION-VALIDATION.md) for fixtures
+and dependencies. Game extracts are not provided. `build/validation.json`
+records the tested hashes and explicitly reports `gameplayTested: false`.
 
-La validation couvre les interruptions, le transport entre claims, la réplication,
-les commandes, le SDK, les textes, le modèle 3D, les onze variantes de puits et
-5 769 profils de pose sur 6 282 modèles examinés. Les autres profils sont refusés
-explicitement. Ce corpus ne prouve pas le déplacement individuel de tous ces objets.
+Validation covers interruptions, cross-claim transport, replication, controls,
+SDK, text, 3D assets, eleven well variants and 5,769 accepted floor-placement
+profiles out of 6,282 examined models. This does not prove that every individual
+object has been moved successfully in-game.
 
-Les essais utilisateur ont confirmé les coffres, le comptoir, les bouteilles,
-les objets sur support, les portes et les puits. Le transport entre claims et
-sa persistance après rechargement ont été confirmés en 0.1.45. Les corrections
-ultérieures jusqu’à 0.1.48 ont passé les tests hors jeu ; leur validation complète
-en jeu, notamment interruptions et gains de performance, reste à confirmer.
+User tests confirmed chests, the counter, bottles, supported objects on surfaces,
+doors and wells. Cross-claim movement and persistence after reloading were
+confirmed in 0.1.45. Later fixes through 0.1.49 passed offline checks; full in-game
+verification of interruptions, performance and new translations remains pending.
 
-## Dernières corrections
+## Recent changes
 
-- **0.1.47** : protections de transport et nettoyage détaillés dans
-  [CORRECTIONS-0.1.47.md](docs/CORRECTIONS-0.1.47.md).
-- **0.1.48** : échecs d’allocation récupérables, lectures absentes temporisées,
-  ciblage inutile supprimé, indexation par groupes de 64, synchronisations
-  réparties, profils moins gourmands et file privée concurrente optimisée.
-  Les lots natifs de lecture restent préservés.
-  Voir [OPTIMISATIONS-0.1.48.md](docs/OPTIMISATIONS-0.1.48.md) pour les mesures
-  hors jeu et leurs limites ; elles ne constituent pas un gain de FPS mesuré.
+- **0.1.47:** transport protections and cleanup; see [corrections](docs/CORRECTIONS-0.1.47.md).
+- **0.1.48:** recoverable allocation failures, throttled missing reads, fewer
+  unnecessary target queries, bounded indexing, distributed synchronization,
+  smaller profiles and concurrent private-read queues. Native read batches
+  remain intact. See [measurements and limits](docs/OPTIMISATIONS-0.1.48.md).
+- **0.1.49:** strict 15-language catalogue validation and corrected native-language
+  coverage tests. See [localization validation](docs/LOCALIZATION-0.1.49.md).
 
-Les tests vérifient notamment les 256 combinaisons de lectures mixtes, un lot
-natif de 128 requêtes, les pannes d’allocation et 2 000 résultats privés
-produits/consommés concurremment, dans l’ordre et exactement une fois.
+Tests include 256 mixed-read patterns, a native batch of 128 requests,
+allocation failures and 2,000 concurrent private results delivered in order
+and exactly once. These are offline measurements, not a measured FPS improvement.
 
-## Documentation technique
+## Technical documentation
 
-- [SDK et provenance](sdk/UPSTREAM.txt), [standard](sdk/STANDARD_V1.txt), [multilingue](sdk/LOCALISATION.txt).
-- [Coffres](docs/DEPLACEMENT-COFFRES.md), [comptoir](docs/DEPLACEMENT-COMPTOIR.md), [pose au sol](docs/POSE-AU-SOL.md).
-- [Portes](docs/PORTES.md), [puits](docs/PUITS.md), [téléportation et interruptions](docs/TELEPORTATION.md).
-- [Interface de transport](docs/INTERFACE-TRANSPORT.md), [tiers et ressources](THIRD_PARTY.md).
+- [SDK provenance](sdk/UPSTREAM.txt), [V1 standard](sdk/STANDARD_V1.txt), [localization](sdk/LOCALISATION.txt).
+- [Chests](docs/DEPLACEMENT-COFFRES.md), [counter](docs/DEPLACEMENT-COMPTOIR.md), [floor placement](docs/POSE-AU-SOL.md).
+- [Doors](docs/PORTES.md), [wells](docs/PUITS.md), [teleportation](docs/TELEPORTATION.md).
+- [Transport interface](docs/INTERFACE-TRANSPORT.md), [third-party notices](THIRD_PARTY.md).
 
-Les notes de recherche datées conservent l’historique et peuvent décrire les
-limitations d’anciennes versions. Ce README décrit le périmètre actuel.
+Dated research notes preserve investigation history and may describe limitations
+of older builds. This README defines the current supported behavior.

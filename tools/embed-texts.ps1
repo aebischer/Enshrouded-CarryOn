@@ -2,10 +2,7 @@ $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot
 $catalog=Get-Content -Raw -Encoding UTF8 "$root/assets/localization/texts.json" | ConvertFrom-Json
 $keys=@('item.name','item.caption','item.description','setting.move_chests','setting.move_objects','setting.move_interactive','setting.inspect_objects','inspect.target','inspect.model','transport.enter','transport.exit','transport.grab','transport.place','transport.finish')
-$lines=[Collections.Generic.List[string]]::new()
-$lines.Add('#pragma once')
-$lines.Add('#include "enshrouded_i18n.h"')
-$lines.Add('inline constexpr enshrouded::i18n::Translation CarryOnTexts[] = {')
+& "$root/sdk/tools/compile-translations.ps1" -Catalog "$root/assets/localization/texts.json" -Output "$root/build/carryon_texts.h" -Symbol CarryOnTexts
 $manifest=[Collections.Generic.List[string]]::new()
 Get-Content -Encoding UTF8 "$root/src/carryon.dll.mod" | ForEach-Object {$manifest.Add($_)}
 foreach($locale in $catalog.PSObject.Properties) {
@@ -16,17 +13,13 @@ foreach($locale in $catalog.PSObject.Properties) {
   $value=$locale.Value.$key
   $invalidControls=if($key -eq 'item.description'){'[\x00-\x09\x0b-\x1f|=]'}else{'[\x00-\x1f|=]'}
   if($value -isnot [string] -or [string]::IsNullOrWhiteSpace($value) -or $value -match $invalidControls -or [Text.Encoding]::UTF8.GetByteCount($value) -gt 1024){throw "Invalid text: $key"}
-  $quoted=ConvertTo-Json -InputObject $value -Compress
-  $lines.Add('{"'+$locale.Name+'","'+$key+'",'+$quoted+'},')
   if($key.StartsWith('setting.')) {
    if([Text.Encoding]::UTF8.GetByteCount($value) -gt 100){throw "Setting label too long: $key"}
    $manifest.Add('text='+$locale.Name+'|'+$key+'|'+$value)
   }
  }
 }
-$lines.Add('};')
 $utf8=[Text.UTF8Encoding]::new($false)
-[IO.File]::WriteAllLines("$root/build/carryon_texts.h",$lines,$utf8)
 [IO.File]::WriteAllLines("$root/dist/Mods/carryon/carryon.dll.mod",$manifest,$utf8)
 Write-Output ('Validated {0} languages and {1} text keys.' -f @($catalog.PSObject.Properties).Count,$keys.Count)
 

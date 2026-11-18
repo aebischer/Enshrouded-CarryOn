@@ -1,54 +1,50 @@
-# Puits à eau — 0.1.43-dev
-
-Le réglage Objets utilisables autorise les puits fonctionnels indépendamment de
-Décors et Coffres. Aucune liste de noms ou de modèles n’est utilisée en production.
-
-## Contrat natif
-
-Relevé en lecture seule du 17 novembre 2026 : entité 1479,
-`Prop_NPC_Water_Well_c`, template `abc315119baca14c9a4bf92d9bfa04c2`.
-Famille 13 ; Fuel (16 octets), DynamicFuelSetup (4), NetworkFuel (4),
-StaticCollider côté serveur et StaticClientCollider côté client (16 chacun).
-Fuel porte un en-tête d’attributs, suivi des valeurs à +8/+12 ; il ne faut pas
-le traiter comme un simple compteur ni réécrire sa valeur de départ.
-
-La classification exige les composants Fuel, FuelSetup, FuelCraftingStock,
-NetworkFuel, les deux collisions statiques et InteractionOfferRuntime avec
-la séquence native de puisage 0xf5024957. DoNotSave, les sous-entités et les
-collisions animées sont refusés. Les onze variantes actuelles (village, désert,
-marais et constructibles) partagent ce contrat. Les tests emploient leurs GUID
-pour retrouver les ressources réelles ; ces GUID ne filtrent pas le mod.
-
-## Transaction
-
-Le chemin commun produit l’aperçu avec le descripteur natif ou les collisions
-du modèle. Il conserve les limites de claim, la validation native, la rotation,
-le déplacement de collision et la synchronisation graphique existants.
-Le snapshot distingue porte et puits : seuls les battants suivent la voie de
-collision dynamique. Les puits gardent leur entité et tous leurs composants.
-
-La réserve et le remplissage ne sont jamais restaurés depuis le snapshot :
-une recharge naturelle pendant l’aperçu doit rester acquise à la pose.
-Un Fuel/refill absent, un PNJ propriétaire (DynamicActiveNpcTarget +24) ou un
-animal associé (DynamicAnimalTarget +4) interdit la saisie ou annule la pose.
-Les systèmes natifs npc_active_target et animal_target lisent CurrentTransform ;
-le commit marque cette transformation via le gestionnaire natif habituel.
-
-## Persistance et validation
-
-Le dispatch 0xe187b0, famille 13, mène à 0xdc3160 puis 0xdc5d60.
-Le writer copie CurrentTransform à 0xdc5f59–0xdc5f7b et sérialise les attributs
-Fuel/MaxFuel à 0xdc60b0–0xdc60be. Le déplacement conserve l’identité et passe
-par le marquage natif de transformation ; aucun puits neuf n’est créé.
-
-Tests hors jeu : onze ressources réelles, géométrie de placement, refus d’une
-interaction différente ou non persistante, indépendance des réglages, réserve
-modifiée pendant l’aperçu, refus des utilisateurs PNJ/animal, collision/rendu,
-et panneau natif de placement pour le puits. Les régressions coffres/décors/portes
-restent exécutées. Ces tests n’exécutent pas le cycle de sauvegarde du moteur.
-
-À vérifier par Alain en jeu : déplacer, puiser, vérifier collision et disparition
-à l’ancienne position, recharger et retrouver un seul puits utilisable au nouvel
-endroit ; essayer une autre apparence et Objets utilisables désactivé.
+# Water wells — introduced in 0.1.43
 
-Retour Alain : déplacement, fonctionnement et conservation après sauvegarde/rechargement confirmés le 17 novembre 2026.
+Usable objects enables functional wells independently of Decor and Chests.
+Production classification uses no model/name allowlist.
+
+## Native contract
+
+Read-only observation on November 17, 2026: entity 1479,
+`Prop_NPC_Water_Well_c`, template `abc315119baca14c9a4bf92d9bfa04c2`.
+Family 13; Fuel (16 bytes), DynamicFuelSetup (4), NetworkFuel (4), server
+StaticCollider and client StaticClientCollider (16 bytes each).
+Fuel contains an attribute header followed by values at +8/+12; do not treat
+it as a plain counter or restore its initial value.
+
+Classification requires Fuel, FuelSetup, FuelCraftingStock, NetworkFuel, both
+static colliders and InteractionOfferRuntime with native drawing sequence
+`0xf5024957`. DoNotSave, sub-entities and animated collisions are rejected.
+Eleven current appearances (village, desert, swamp and craftable wells) share
+this contract. Tests use GUIDs to find real fixtures; those GUIDs do not filter
+production movement.
+
+## Transaction
+
+The common path creates a preview from native placement data or model collisions.
+It retains claim bounds, native validation, rotation, collision movement and
+render synchronization. Snapshots distinguish doors and wells: only door leaves
+use the dynamic-collision path. Wells keep their entity and components.
+
+Water reserves and refill are never restored from the snapshot: natural refill
+during preview must survive commit. Missing Fuel/refill, an NPC owner
+(DynamicActiveNpcTarget +24), or an associated animal (DynamicAnimalTarget +4)
+refuses pickup or invalidates placement. Native npc_active_target and animal_target
+systems read CurrentTransform, marked through the usual native manager.
+
+## Persistence and validation
+
+Dispatch `0xe187b0`, family 13, reaches `0xdc3160` then `0xdc5d60`. The writer
+copies CurrentTransform at `0xdc5f59–0xdc5f7b` and serializes Fuel/MaxFuel
+attributes at `0xdc60b0–0xdc60be`. Movement preserves identity and marks the
+native transform; it does not spawn another well.
+
+Offline tests cover eleven real resources, placement geometry, unrelated or
+nonpersistent interactions, independent settings, reserves changed during preview,
+NPC/animal users, collision/render and native placement hints. Chest/decor/door
+regressions remain enabled. These tests do not execute native save cycles.
+
+Manual checks include moving, drawing water, collision at the new location,
+absence at the old location, save/reload, another appearance and disabling
+Usable objects. Alain confirmed movement, operation and persistence after
+save/reload on November 17, 2026.
