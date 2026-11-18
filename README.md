@@ -110,8 +110,10 @@ Le manifeste distribué est généré par `tools/embed-texts.ps1` à partir de
 produite dans `dist`, qui comprend les traductions. Les paramètres restent
 stockés par le chargeur ; ne pas distribuer les profils personnels.
 
-Le dépôt fournit les sources et ressources du mod ; aucune release binaire
-n’est créée automatiquement par la publication d’un commit.
+Pour installer sans compiler, télécharger l’archive ZIP dans les
+[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases) et suivre
+`INSTALLATION.txt`. Le chargeur se télécharge séparément dans ses propres
+Releases. Les deux dépôts privés nécessitent un compte GitHub autorisé.
 
 ## Validation et état des essais
 
