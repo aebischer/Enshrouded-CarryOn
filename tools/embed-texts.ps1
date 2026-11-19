@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot
 $catalog=Get-Content -Raw -Encoding UTF8 "$root/assets/localization/texts.json" | ConvertFrom-Json
 $keys=@('item.name','item.caption','item.description','setting.move_chests','setting.move_objects','setting.move_interactive','setting.inspect_objects','inspect.target','inspect.model','transport.enter','transport.exit','transport.grab','transport.place','transport.finish')
@@ -20,6 +20,6 @@ foreach($locale in $catalog.PSObject.Properties) {
  }
 }
 $utf8=[Text.UTF8Encoding]::new($false)
-[IO.File]::WriteAllLines("$root/dist/Mods/carryon/carryon.dll.mod",$manifest,$utf8)
+[IO.File]::WriteAllLines("$root/dist/Mods/EnshroudedModLoader/carryon/carryon.dll.mod",$manifest,$utf8)
 Write-Output ('Validated {0} languages and {1} text keys.' -f @($catalog.PSObject.Properties).Count,$keys.Count)
 

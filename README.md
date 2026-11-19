@@ -1,8 +1,8 @@
 # CarryOn for Enshrouded
 
-Development version **0.1.49-dev**, a Windows x64 mod for
+Development version **0.1.50-dev**, a Windows x64 mod for
 [Enshrouded ModLoader](https://github.com/aebischer/Enshrouded-ModLoader)
-0.6.10 or later (tested with 0.6.11), SDK V1 / ABI 1.
+0.6.12 or later, SDK V1 / ABI 1.
 Currently intended for solo play; dedicated servers and multiplayer are not certified.
 
 Move chests with their contents and compatible world objects using craftable
@@ -11,17 +11,17 @@ Move chests with their contents and compatible world objects using craftable
 ## Install without compiling
 
 Download the compiled ZIP from
-[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases), install
+[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.50-dev), install
 ModLoader separately, then follow [INSTALLATION.txt](INSTALLATION.txt).
 Both repositories and their downloads are public; no GitHub account is required.
 
-With the game closed, copy `Mods/carryon` into the game's `Mods` directory:
+With the game closed, merge the supplied `Mods` directory into the game directory:
 
 ```text
 Enshrouded/
   enshrouded.exe
   dinput8.dll                 supplied by ModLoader
-  Mods/
+  Mods/EnshroudedModLoader/
     carryon/
       carryon.dll
       carryon.dll.mod
@@ -112,7 +112,7 @@ locates Visual Studio through `vswhere`. Run `build.cmd` from the repository roo
 It builds the DLL and runs SDK and transport-policy tests. Prepared icons,
 translations and the 3D pack are included and embedded; Blender is not needed.
 
-Distribute the generated `dist/Mods/carryon` directory. The manifest in `dist`
+Distribute the generated `dist/Mods/EnshroudedModLoader/carryon` directory. The manifest in `dist`
 is generated from `src/carryon.dll.mod` and the translation catalogue; use that
 copy so the translated settings are included. Do not distribute build objects,
 personal profiles or raw game resources.
@@ -161,3 +161,14 @@ and exactly once. These are offline measurements, not a measured FPS improvement
 
 Dated research notes preserve investigation history and may describe limitations
 of older builds. This README defines the current supported behavior.
+
+## Package layout update
+
+This release requires ModLoader **0.6.12 or newer**. Install the loader first: its
+installer migrates recognized old packages into `Mods/EnshroudedModLoader/`,
+including package data, while retaining mod IDs and per-world settings. Then
+merge this release's `Mods` directory into the game directory. Do not delete
+`ModLoader/worlds` or keep duplicate legacy package folders.
+
+This update changes distribution paths and documentation; gameplay behavior is
+unchanged. Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.50-dev).

@@ -1,4 +1,4 @@
-param(
+﻿param(
  [string]$Fixtures=(Join-Path $PSScriptRoot '..\..\work'),
  [string]$ModelReference=(Join-Path $PSScriptRoot '..\..\work\enshrouded-blender-reference\enshrouded_tools\core'),
  [string]$PackageValidator=(Join-Path $PSScriptRoot '..\..\build\validate_mod_package.exe')
@@ -48,8 +48,8 @@ try {
 }
 & $PackageValidator "$root\dist" carryon/carryon.dll
 if($LASTEXITCODE -ne 0){throw 'Package validation failed'}
-$report=@{time=(Get-Date -Format o);dll=(Get-FileHash "$root\dist\Mods\carryon\carryon.dll").Hash;
- manifest=(Get-FileHash "$root\dist\Mods\carryon\carryon.dll.mod").Hash;gameplayTested=$false;fixtures=@{}}
+$report=@{time=(Get-Date -Format o);dll=(Get-FileHash "$root\dist\Mods\EnshroudedModLoader\carryon\carryon.dll").Hash;
+ manifest=(Get-FileHash "$root\dist\Mods\EnshroudedModLoader\carryon\carryon.dll.mod").Hash;gameplayTested=$false;fixtures=@{}}
 foreach($key in $files.Keys){$report.fixtures[$key]=(Get-FileHash -LiteralPath $files[$key]).Hash}
 $report | ConvertTo-Json -Depth 3 | Set-Content -Encoding UTF8 "$root\build\validation.json"
 Write-Output 'PASS: complete offline validation; no installation and no gameplay automation.'

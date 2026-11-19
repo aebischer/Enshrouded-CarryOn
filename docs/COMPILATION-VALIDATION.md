@@ -10,7 +10,7 @@ and its policy tests does not require another repository.
 `assets/pincer3d/pincer.pack` is embedded by `src/pincer_model.rc`. The icon and
 translations become compiler inputs through `embed-*.ps1`. Outputs stay under
 Git-ignored `build` and `dist`. Install the DLL and generated manifest from
-`dist/Mods/carryon`; the source manifest alone omits generated translations.
+`dist/Mods/EnshroudedModLoader/carryon`; the source manifest alone omits generated translations.
 
 ## Full validation with local fixtures
 
@@ -71,7 +71,7 @@ Do not publish raw game extracts.
 ## Installation and manual checks
 
 After validation, close the game, back up the installed files and replace only
-`Mods/carryon/carryon.dll` and `carryon.dll.mod` from `dist`. Preserve loader
+`Mods/EnshroudedModLoader/carryon/carryon.dll` and `carryon.dll.mod` from `dist`. Preserve loader
 profiles and world saves. There is no separate CarryOn installer.
 
 Manually test pickup/place/cancel, rotations, tool changes, focus loss, map,

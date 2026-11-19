@@ -34,7 +34,7 @@ int main() {
     CHECK(!carryon::parse(world,nullptr,config));
     std::string oversized(1024,'x');
     CHECK(!carryon::parse(world,oversized.c_str(),config));
-    HMODULE dll=LoadLibraryW(L"..\\dist\\Mods\\carryon\\carryon.dll");
+    HMODULE dll=LoadLibraryW(L"..\\dist\\Mods\\EnshroudedModLoader\\carryon\\carryon.dll");
     CHECK(dll);
     auto configure=reinterpret_cast<EnshroudedModConfigureFn>(GetProcAddress(dll,"EnshroudedModConfigure"));
     auto initialize=reinterpret_cast<EnshroudedModInitializeFn>(GetProcAddress(dll,"EnshroudedModInitialize"));
