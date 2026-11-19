@@ -2,7 +2,7 @@
 
 Development version **0.1.52-dev**, a Windows x64 mod for
 [Enshrouded ModLoader](https://github.com/aebischer/Enshrouded-ModLoader)
-0.6.12 or later, SDK V1 / ABI 1.
+0.6.15 or later, SDK V1 / ABI 1.
 Currently intended for solo play; dedicated servers and multiplayer are not certified.
 
 Move chests with their contents and compatible world objects using craftable
@@ -12,7 +12,7 @@ Move chests with their contents and compatible world objects using craftable
 
 Use the same mod download in both cases. **Kiln is optional.**
 
-- **Without Kiln:** install [ModLoader 0.6.14](https://github.com/aebischer/Enshrouded-ModLoader/releases/tag/v0.6.14)
+- **Without Kiln:** install [ModLoader 0.6.15](https://github.com/aebischer/Enshrouded-ModLoader/releases/tag/v0.6.15)
   with `Install.cmd`; it installs its proxy as `<game>/dinput8.dll`.
 - **With Kiln:** install [Kiln](https://github.com/frostdev-ops/kiln/releases) first,
   then run the same ModLoader `Install.cmd`. It detects Kiln and installs the
@@ -28,7 +28,7 @@ allow native drop-ins. Do not run two copies of the loader. When adding Kiln to
 an existing standalone installation, close the game, install Kiln, then rerun
 ModLoader's installer so it can migrate receipt-identified old chain copies.
 After removing Kiln, rerun the installer to restore standalone startup.
-Preserve `ModLoader/worlds`, package data and installer receipts when updating.
+Preserve `Mods/EnshroudedModLoader/worlds`, package data and installer receipts when updating.
 
 Solo gameplay was tested with ModLoader 0.6.14, CarryOn 0.1.52-dev and Lantern
 0.1.31-dev under Kiln **0.2.0-dev.29.19-beta.1**. Lantern lighting and equipped-state
@@ -212,12 +212,19 @@ and basic chest transport were confirmed in game after the correction.
 
 ## Package layout update (0.1.50)
 
-This release requires ModLoader **0.6.12 or newer**. Install the loader first: its
+This release requires ModLoader **0.6.15 or newer**. Install the loader first: its
 installer migrates recognized old packages into `Mods/EnshroudedModLoader/`,
 including package data, while retaining mod IDs and per-world settings. Then
 merge this release's `Mods` directory into the game directory. Do not delete
-`ModLoader/worlds` or keep duplicate legacy package folders.
+`Mods/EnshroudedModLoader/worlds` or keep duplicate legacy package folders.
 
 The 0.1.50 update changed distribution paths without changing gameplay. The
 current release also includes the pickup and chest selection fixes above.
 Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.52-dev).
+
+## World profiles migration (ModLoader 0.6.15)
+
+Run the loader Install.cmd before updating or starting the game. It migrates
+old ModLoader/worlds files to Mods/EnshroudedModLoader/worlds, with verified
+backups, conflict checks and restartable copying. Preserve the new worlds
+folder when updating mods. Use 0.6.15 or newer for this directory layout.
