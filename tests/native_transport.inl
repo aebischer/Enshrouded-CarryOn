@@ -1,7 +1,8 @@
 // Exercise the real adapter against native ABI substitutes. No game or hooks.
-static Byte testArchetype[0x50]{},testRecord[0x38]{},testTransform[176]{};
+static Byte testArchetype[0x50]{},testRecord[0x38]{},testTransform[176]{},testTemplate[0x28]{};
 static Byte testColor=0;
 static bool testChest=true,testColorAvailable=true;
+static bool testUpgradeable=true;
 static unsigned testWrites=0;
 static unsigned testTargetReads=0;
 static constexpr uint32_t TestEntity=0x10203040,TestTransformHash=12345;
@@ -35,7 +36,7 @@ static const uint16_t* __fastcall testIndex(void*,const uint32_t* type) {
  if(*type==TestModelHash)return &model;
  if(*type==InventoryType)return &inventory;
  if(*type==HighlightType)return &color;
- if(*type==UpgradeStorageType)return &chest;
+ if(*type==typeHash("keen::ecs::UpgradeStorage"))return &chest;
  if(*type==TestTransformHash)return &transform;
  return nullptr;
 }
@@ -56,14 +57,15 @@ static ComponentView* __fastcall testRead(ComponentView* out,void*,const uint16_
 }
 static void* __fastcall testEntity(void*,uint32_t entity) {
  if(entity!=TestEntity)return nullptr;
- testArchetype[0]=testChest?4:0;
+ testArchetype[0]=testChest&&testUpgradeable?4:0;
+ testTemplate[0x20]=testChest?3:8;write(testRecord,0x28,static_cast<Byte*>(testTemplate));
  write(testRecord,0x18,static_cast<Byte*>(testArchetype));return testRecord;
 }
 static ComponentView* __fastcall testMutable(ComponentView* out,void* tracker,void* stamps,void* record,const uint16_t* type,bool replay) {
  CHECK(tracker && stamps && record==testRecord && *type==1 && !replay);
  ++testWrites;*out={&testColor,1};return out;
 }
-static void testTransport() {
+static void testTransport(const char* fixtureFile) {
  transportTypeIndex=&testIndex;transportRead=&testRead;
  transportEntity=&testEntity;transportMutable=&testMutable;
  transportRenderType=TestTransformHash;
@@ -99,6 +101,38 @@ static void testTransport() {
  ui[0x1cd8]=1; // Real PE enum value, not a zero-initialized fake gameplay state.
  transportSelection={};transportWorld=0;transportPainted=0;transportUpdated=0;
  transportChests=true;testColor=0;testWrites=0;
+ // Use actual native template bytes for all eleven player-placeable chests.
+ const std::string fixturePath=fixtureFile;
+ const auto fixtureDirectory=fixturePath.substr(0,fixturePath.find_last_of("/\\")+1);
+ const char* chestTemplates[]={
+  "85a49dbc6516fa46aa45c40911719925", // Prop_Storage_56_T4_Magic
+  "2b8d25353e39044d9392bd990be5ae61", // Prop_Storage_32_T2_Box_Magic
+  "a9d6ebbd599e654cb056ad0070db97dc", // Prop_Storage_40_T3_Box
+  "8a7dddb0691e1845b52fe94cfa769ebc", // Prop_Storage_32_T2_Box
+  "2ea6e7fa70bc644db55a8d222c152f3a", // Prop_Storage_56_T4_Box
+  "2fa35b95ea084d41bd98ac75990aef04", // Prop_Storage_24_T1_Box_Magic
+  "90a8ba652a024b459cb7b92cb8c06cd4", // Prop_Storage_24_T1_Box
+  "f12592431d195c41a335013419b202e7", // Prop_Storage_40_T3_Magic
+  "35b87dd454fefd44b5b3d6c340673c41", // Prop_Storage_32_T2_Chest_Wood
+  "7e7e660cbd0fb94cb58dc3a20df7eaec", // Prop_Storage_40_T5_Chest_Silver
+  "bd4c83bcf1584a4997fb0dc0248eb738", // Prop_Storage_72_T6_Magic
+ };
+ unsigned upgradeable=0;
+ for(const auto templateGuid:chestTemplates) {
+  std::ifstream input(fixtureDirectory+"resource-"+templateGuid+"-0x39768775-0.bin",std::ios::binary);
+  const Bytes native{std::istreambuf_iterator<char>(input),std::istreambuf_iterator<char>()};
+  CHECK(native.size()>28&&native[8]==3);
+  const auto components=array(native,16,12);testUpgradeable=false;
+  for(uint32_t i=0;i<components.count;++i)
+   if(u32(native,components.at+size_t(i)*12)==typeHash("keen::ecs::UpgradeStorage"))testUpgradeable=true;
+  if(testUpgradeable)++upgradeable;
+  std::memcpy(testTemplate,native.data()+0,16);
+  CHECK(transportTargetCandidate(&context,&world,targets,playerTransform).entity==TestEntity);
+  transportChests=false;CHECK(!transportTargetCandidate(&context,&world,targets,playerTransform).entity);
+  transportChests=true;
+ }
+ CHECK(upgradeable==8);testUpgradeable=true;
+ std::puts("PASS: eleven native chest templates, including three without UpgradeStorage; chest setting respected.");
  auto now=GetTickCount64();
  auto frame=[&](bool tab,bool cancel=false,bool focus=true) {
   transportFrame(row,info,tab,cancel,focus,now);

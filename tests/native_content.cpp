@@ -128,7 +128,7 @@ int run(const char* hammerFile,const char* menuFile,const char* iconFile,const c
  for(size_t axis=0;axis<3;++axis)CHECK(read<float>(counter.data(),0x3d0+axis*4)<read<float>(counter.data(),0x3dc+axis*4));
  testPincerModel();
  testPincerTextures();
- testTransport();
+ testTransport(doorFile);
  testTransportHud();
  testTransportServer();
  testTransportCollisionProbe();
@@ -142,6 +142,7 @@ int run(const char* hammerFile,const char* menuFile,const char* iconFile,const c
  testDoorRuntime();
  testWellRuntime();
  testTeleportRuntime();
+ testLiveActorHealth();
  testTransportInterruptions();
  testClaimAndSyncRecovery();
  testPlacementHud();

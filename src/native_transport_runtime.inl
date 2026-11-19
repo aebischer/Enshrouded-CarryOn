@@ -112,13 +112,18 @@ void transportSuspendMove(TransportMoveRuntime& move) {
  move.validation.ticket=0;move.input.place=false;move.input.grab=false;
  move.input.wasActive=false;move.input.left=false;move.input.right=false;transportPlaceReady=false;
 }
-bool transportActorEligible(void* world,uint32_t actor) {
+bool transportActorHoldsPincer(void* world,uint32_t actor) {
  const auto slots=transportComponent(world,actor,transportSlotsType,216);
- // network_health_attribute writes this server-side component from Health.
- // Reflected layout: uint32 health, uint32 healthMax (8 bytes).
- const auto health=transportComponent(world,actor,typeHash("keen::ecs::NetworkHealth"),8);
- return slots.data&&health.data&&read<uint32_t>(health.data,0)>0&&read<uint32_t>(health.data,4)>0&&
-  transportHeldItem(world,slots.data)==hash(Item);
+ return slots.data&&transportHeldItem(world,slots.data)==hash(Item);
+}
+bool transportActorEligible(void* world,uint32_t actor) {
+ // Health is authoritative and server-only. The pinned native attribute layout
+ // stores current/max signed values in slots 0/7 after its eight-byte header.
+ // Player entities need not have the separate NetworkHealth component.
+ const auto health=transportComponent(world,actor,typeHash("keen::ecs::Health"),40);
+ return health.data&&read<uint32_t>(health.data,0)==0x8eb84995&&
+  read<uint16_t>(health.data,4)==8&&(read<Byte>(health.data,6)&1)&&read<Byte>(health.data,7)==8&&
+  read<int32_t>(health.data,8)>0&&read<int32_t>(health.data,36)>0&&transportActorHoldsPincer(world,actor);
 }
 bool transportStorageAvailable(void* world,uint32_t entity) {
  const auto lock=transportComponent(world,entity,transportLockType,2);
@@ -199,7 +204,10 @@ void __fastcall transportValidateMove(uint32_t* flags,void* context,const void* 
  // Native cursor configuration describes the action item, which is empty for
  // this tool. Resolve the held pincer from SlotSelection on the actual actor.
  // Its configuration's primary flag is likewise not a transport-mode flag.
- if(!transportActorEligible(reinterpret_cast<void*>(world),move.world.actor))return;
+ // Client preview has no Health component; only the server authorizes moves.
+ if(world==move.world.server) {
+  if(!transportActorEligible(reinterpret_cast<void*>(world),move.world.actor))return;
+ } else if(!transportActorHoldsPincer(reinterpret_cast<void*>(world),move.world.actor))return;
  const auto zones=read<const void*>(context,0x190);
  if(world==move.world.client&&stage==transport::MoveStage::Preview) {
   const auto row=transportRows.load(std::memory_order_relaxed);

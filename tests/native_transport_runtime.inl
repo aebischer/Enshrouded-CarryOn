@@ -1,5 +1,5 @@
 struct MoveFixture {
- Byte world[0x190]{},client[0x190]{},registry[0x100]{},record[0x38]{},server[0x1798]{},health[8]{};
+ Byte world[0x190]{},client[0x190]{},registry[0x100]{},record[0x38]{},server[0x1798]{},health[40]{};
  bool missingHealth=false,sourceGone=false,manySources=false;
  Byte zones[0x20]{},zone[0x48]{},transform[56]{},actorTransform[56]{},inventory[84]{},slots[216]{},bar[96]{},lock[2]{};
  Byte item[4]{},collider[16]{},resource[0x40]{},system[0x1a8]{},manager[0x90]{},collision[0x80]{};
@@ -36,7 +36,7 @@ static const uint16_t* __fastcall runtimeIndex(void*,const uint32_t* hashValue) 
  static const uint16_t indices[]{0,1,2,3,4,5,6,7,8,9,10,11,12};
  static const uint16_t fuel=21,refill=22,npc=23,animal=24;
  static const uint16_t health=25;
- if(*hashValue==typeHash("keen::ecs::NetworkHealth"))return &health;
+ if(*hashValue==typeHash("keen::ecs::Health"))return &health;
  if(*hashValue==typeHash("keen::ecs::Fuel"))return &fuel;
  if(*hashValue==typeHash("keen::ecs::DynamicFuelSetup"))return &refill;
  if(*hashValue==typeHash("keen::ecs::DynamicActiveNpcTarget"))return &npc;
@@ -66,7 +66,7 @@ static ComponentView* __fastcall runtimeRead(ComponentView* out,void* world,cons
  if(f.manySources&&entity>=2000&&entity<2032)entity=1217;
  if(f.clientSourceAbsent&&world==f.client&&entity==1217)return out;
  if(entity==9) {
-  if(*index==25&&!f.missingHealth)*out={f.health,8};
+  if(*index==25&&world==f.world&&!f.missingHealth)*out={f.health,40};
   if(*index==1)*out={f.actorTransform,56};if(*index==5)*out={f.slots,216};return out;
  }
  if(entity==500&&*index==6){*out={f.bar,96};return out;}
@@ -176,7 +176,8 @@ static void runtimeSetup(MoveFixture& f) {
  write(f.context,0x108,static_cast<Byte*>(f.actor));
  write(f.context,0x190,static_cast<Byte*>(f.zones));write(f.context,0x1b0,static_cast<Byte*>(f.registry));
  transportActive=true;transportEligible=true;transportChests=true;transportUpdated=GetTickCount64();
- write<uint32_t>(f.health,0,100);write<uint32_t>(f.health,4,100);
+ write<uint32_t>(f.health,0,0x8eb84995);write<uint16_t>(f.health,4,8);f.health[6]=1;f.health[7]=8;
+ write<int32_t>(f.health,8,100);write<int32_t>(f.health,36,100);
  transportMovePostStep(f.server,f.fullWorld());
  transportMove.world.client=reinterpret_cast<uintptr_t>(f.client);transportMove.world.actor=9;
 }
@@ -459,6 +460,37 @@ static void __fastcall runtimeUiOriginal(void* context) {
  auto services=read<void*>(context,0xd0);auto game=read<void*>(services,0);auto client=read<void*>(game,0x38);
  write<Byte>(client,0x1cd8,51);
 }
+static void testLiveActorHealth() {
+ MoveFixture f;runtimeSetup(f);runtimeCounter(f);
+ // Exact server Health bytes from the live player who could not pick up decor.
+ // Neither client nor server player had NetworkHealth; client had no Health either.
+ const Byte live[]={0x95,0x49,0xb8,0x8e,0x08,0x00,0x01,0x08,0x29,0x02,0,0,0,0,0,0,
+  0xfa,0,0,0,0x2f,0x01,0,0,0xf4,0x01,0,0,0x20,0x03,0,0,0,0,0,0,0x29,0x02,0,0};
+ std::memcpy(f.health,live,sizeof(live));
+ CHECK(transportActorEligible(f.world,9));
+ CHECK(!transportActorEligible(f.client,9)); // Client data never authorizes a server move.
+ runtimeGrab(f);
+ write(f.descriptor,0x30,static_cast<Byte*>(f.client));runtimeValidatePending(f);
+ CHECK(transportMove.preview.updatedAt&&transportHolding);
+ for(unsigned invalid=0;invalid<8;++invalid) {
+  std::memcpy(f.health,live,sizeof(live));
+  switch(invalid) {
+   case 0:write<int32_t>(f.health,8,0);break;
+   case 1:write<int32_t>(f.health,8,-1);break;
+   case 2:write<int32_t>(f.health,36,0);break;
+   case 3:f.health[6]=0;break;
+   case 4:write<uint16_t>(f.health,4,12);break;
+   case 5:f.health[7]=7;break;
+   case 6:write<uint32_t>(f.health,0,0);break;
+   case 7:f.missingHealth=true;break;
+  }
+  CHECK(!transportActorEligible(f.world,9));
+ }
+ f.missingHealth=false;std::memcpy(f.health,live,sizeof(live));
+ write<int32_t>(f.health,8,0);transportMovePostStep(f.server,f.fullWorld());
+ CHECK(!transportHolding&&!f.moves&&!f.writes);
+ std::puts("PASS: live 553/553 server Health without NetworkHealth, client preview without health components, invalid attributes and death cancellation.");
+}
 static void testTransportInterruptions() {
  // Health is read from a real component contract, not an injected eligibility
  // bool. Check before grab and between validation and commit, in every phase.
@@ -471,7 +503,7 @@ static void testTransportInterruptions() {
   if(phase>2)runtimeResume(f);
   if(phase==0||phase==3){runtimeQueue();runtimeValidatePending(f);}
   switch(interruption) {
-   case 0:write<uint32_t>(f.health,0,0);break;
+   case 0:write<int32_t>(f.health,8,0);break;
    case 1:f.missingHealth=true;break;
    case 2:write<uint32_t>(f.bar,0,0);break;
    case 3:f.focused=false;break;
@@ -485,7 +517,7 @@ static void testTransportInterruptions() {
   CHECK(!transportHolding&&transportMove.transaction.stage()==transport::MoveStage::Idle&&!f.writes&&!f.moves);
  }
  {
-  MoveFixture f;runtimeSetup(f);write<uint32_t>(f.health,0,0);
+  MoveFixture f;runtimeSetup(f);write<int32_t>(f.health,8,0);
   transportMove.input.grab=true;transportMove.input.requestedAt=GetTickCount64();transportMove.input.requestedEntity=1217;transportMove.input.requestedItem=42;
   transportMovePostStep(f.server,f.fullWorld());CHECK(!transportHolding&&!f.moves&&!f.writes);
  }

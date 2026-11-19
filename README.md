@@ -1,6 +1,6 @@
 # CarryOn for Enshrouded
 
-Development version **0.1.50-dev**, a Windows x64 mod for
+Development version **0.1.52-dev**, a Windows x64 mod for
 [Enshrouded ModLoader](https://github.com/aebischer/Enshrouded-ModLoader)
 0.6.12 or later, SDK V1 / ABI 1.
 Currently intended for solo play; dedicated servers and multiplayer are not certified.
@@ -11,7 +11,7 @@ Move chests with their contents and compatible world objects using craftable
 ## Install without compiling
 
 Download the compiled ZIP from
-[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.50-dev), install
+[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.52-dev), install
 ModLoader separately, then follow [INSTALLATION.txt](INSTALLATION.txt).
 Both repositories and their downloads are public; no GitHub account is required.
 
@@ -162,7 +162,28 @@ and exactly once. These are offline measurements, not a measured FPS improvement
 Dated research notes preserve investigation history and may describe limitations
 of older builds. This README defines the current supported behavior.
 
-## Package layout update
+## Chest selection correction (0.1.52)
+
+Selection uses native storage template family 3 instead of requiring an upgrade
+component. This includes wooden and silver chests and the huge magic chest.
+Offline selection tests cover all eleven active chest templates, including the
+three without `UpgradeStorage`, and the per-world chest setting. Server-side
+inventory, interaction-lock and placement checks remain unchanged. The tester
+confirmed the correction in game, including the three previously excluded chests.
+
+## Pickup health correction (0.1.51)
+
+Pickup and placement now check the player's authoritative server `Health`
+attribute. The previous check required `NetworkHealth`, which can be absent
+on a living player and incorrectly prevent pickup. Client previews do not
+require server-only health data; server-side death and invalid-data checks
+remain enforced before pickup and commit, including during travel.
+
+Offline tests reproduce the observed 553/553 player state, missing client
+health components, invalid attributes and death cancellation. Decor pickup
+and basic chest transport were confirmed in game after the correction.
+
+## Package layout update (0.1.50)
 
 This release requires ModLoader **0.6.12 or newer**. Install the loader first: its
 installer migrates recognized old packages into `Mods/EnshroudedModLoader/`,
@@ -170,5 +191,6 @@ including package data, while retaining mod IDs and per-world settings. Then
 merge this release's `Mods` directory into the game directory. Do not delete
 `ModLoader/worlds` or keep duplicate legacy package folders.
 
-This update changes distribution paths and documentation; gameplay behavior is
-unchanged. Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.50-dev).
+The 0.1.50 update changed distribution paths without changing gameplay. The
+current release also includes the pickup and chest selection fixes above.
+Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.52-dev).

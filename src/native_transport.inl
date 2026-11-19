@@ -93,7 +93,6 @@ Byte transportOriginalColor=0,transportAppliedColor=0;
 bool transportMissingColorLogged=false;
 
 // Hashes from reflected type descriptors (+0x90), not guessed item names.
-constexpr uint32_t UpgradeStorageType=0x8a207846;
 constexpr uint32_t HighlightType=0xcdfc4fa8;
 constexpr uint32_t InventoryType=0xb19528a9;
 struct TransportPropClass {uint32_t item=0;bool door=false,well=false;};
@@ -169,11 +168,14 @@ uint32_t transportHeldItem(void* world,const Byte* slots) {
  const auto inventory=transportComponent(world,entity,InventoryType,96);
  return inventory.data?read<uint32_t>(inventory.data,(selected%8)*12):0;
 }
-bool transportHas(void* context,void* world,uint32_t entity,uint32_t type) {
- const auto index=transportIndex(world,type);if(!index||!entity)return false;
- auto record=transportEntity(context,entity);if(!record)return false;
- auto archetype=read<const Byte*>(record,0x18);if(!archetype)return false;
- return (read<uint64_t>(archetype,(*index/64)*8)&(uint64_t(1)<<(*index%64)))!=0;
+bool transportChestTarget(void* context,uint32_t entity) {
+ if(!context||!entity||!transportEntity)return false;
+ const auto record=transportEntity(context,entity);if(!record)return false;
+ const auto descriptor=read<const Byte*>(record,0x28);
+ // Native template family 3 is storage. UpgradeStorage only marks chests
+ // that offer an upgrade; the wooden, silver and huge magic chests lack it.
+ // Inventory identity, interaction lock and placement remain server-validated.
+ return descriptor&&read<Byte>(descriptor,0x20)==3;
 }
 Byte* transportColor(void* context,void* world,uint32_t entity) {
  // Read and validate the dynamic half before requesting the native write mark.
@@ -215,7 +217,7 @@ transport::Candidate transportTargetCandidate(void* context,void* world,const By
   const auto id=read<uint64_t>(targets,slot*16);
   const auto kind=read<Byte>(targets,slot*16+8);
   if(kind==0 && id && id<=UINT32_MAX &&
-     ((slot==2&&transportChests.load()&&transportHas(context,world,static_cast<uint32_t>(id),UpgradeStorageType))||
+     ((slot==2&&transportChests.load()&&transportChestTarget(context,static_cast<uint32_t>(id)))||
       transportClassifyProp(world,static_cast<uint32_t>(id)).item)) {
    const auto transform=transportComponent(world,static_cast<uint32_t>(id),transportRenderType,176);
    const auto model=transportComponent(world,static_cast<uint32_t>(id),transportModelType,4);

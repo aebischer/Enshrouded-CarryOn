@@ -79,9 +79,13 @@ Alain subsequently confirmed travel and save/reload persistence in-game.
   longer than five seconds allows two seconds for the first returning UI frame.
   After InGame resumes, targeting has two seconds to recover; missing targeting
   cannot maintain suspension forever.
-- NetworkHealth is eight bytes (health +0, maximum +4), published from Health
-  by network_health_attribute `0x27a230`. Missing data, zero health or zero
-  maximum refuses pickup/commit, including while the map is open.
+- Server player `Health` uses the pinned 40-byte attribute layout: root
+  `0x8eb84995`, storage offset 8, initialized flag and eight signed slots;
+  current health is at +8 and maximum at +36. Invalid/missing server data
+  or nonpositive current/maximum refuses pickup and commit, including while
+  the map is open. `NetworkHealth` is not required: it was absent on the live
+  player. Client preview checks the equipped tool; health authorization stays
+  on the server, since the client player may expose neither health component.
 
 Tests cover 144 family/phase/interruption combinations, health, menus/focus/tool,
 source/claim invalidation, old-session snapshots, repeated trips, long live loading,

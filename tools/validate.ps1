@@ -19,6 +19,17 @@ $files=@{
  hammer='resource-618b3ac8dbea284d914688c4c8d9cb98-0x39768775-0.bin'
  wand='resource-0b6db1ac5b832949a2f00c6046bfc35c-0x39768775-0.bin'
 }
+$files['chest_0']='resource-85a49dbc6516fa46aa45c40911719925-0x39768775-0.bin'
+$files['chest_1']='resource-2b8d25353e39044d9392bd990be5ae61-0x39768775-0.bin'
+$files['chest_2']='resource-a9d6ebbd599e654cb056ad0070db97dc-0x39768775-0.bin'
+$files['chest_3']='resource-8a7dddb0691e1845b52fe94cfa769ebc-0x39768775-0.bin'
+$files['chest_4']='resource-2ea6e7fa70bc644db55a8d222c152f3a-0x39768775-0.bin'
+$files['chest_5']='resource-2fa35b95ea084d41bd98ac75990aef04-0x39768775-0.bin'
+$files['chest_6']='resource-90a8ba652a024b459cb7b92cb8c06cd4-0x39768775-0.bin'
+$files['chest_7']='resource-f12592431d195c41a335013419b202e7-0x39768775-0.bin'
+$files['chest_8']='resource-35b87dd454fefd44b5b3d6c340673c41-0x39768775-0.bin'
+$files['chest_9']='resource-7e7e660cbd0fb94cb58dc3a20df7eaec-0x39768775-0.bin'
+$files['chest_10']='resource-bd4c83bcf1584a4997fb0dc0248eb738-0x39768775-0.bin'
 foreach($key in @($files.Keys)) {
  $files[$key]=Join-Path $Fixtures $files[$key]
  if(!(Test-Path -LiteralPath $files[$key])){throw "Missing native fixture: $($files[$key])"}
