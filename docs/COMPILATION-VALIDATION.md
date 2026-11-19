@@ -2,7 +2,7 @@
 
 ## Standalone build
 
-Clone the private repository with an authorized account, open a Windows console
+Clone the public repository (no GitHub account required), open a Windows console
 and run `build.cmd` from its root. Visual Studio C++ x64 tools, Windows SDK and
 PowerShell are required. MinHook and SDK headers are included. Building the DLL
 and its policy tests does not require another repository.

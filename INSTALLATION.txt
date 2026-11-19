@@ -46,4 +46,4 @@ but do not certify every object or replace in-game testing of recent changes.
 
 All 15 game interface languages are included. Documentation uses English.
 Use SHA256SUMS.txt and Get-FileHash to verify release contents.
-Sources and private downloads: https://github.com/aebischer/Enshrouded-CarryOn
+Sources and public downloads: https://github.com/aebischer/Enshrouded-CarryOn

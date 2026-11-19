@@ -13,7 +13,7 @@ Move chests with their contents and compatible world objects using craftable
 Download the compiled ZIP from
 [Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases), install
 ModLoader separately, then follow [INSTALLATION.txt](INSTALLATION.txt).
-Both repositories require an authorized GitHub account.
+Both repositories and their downloads are public; no GitHub account is required.
 
 With the game closed, copy `Mods/carryon` into the game's `Mods` directory:
 
