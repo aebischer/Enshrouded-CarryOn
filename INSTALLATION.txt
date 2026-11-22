@@ -1,4 +1,4 @@
-CARRYON 0.1.52-dev — WINDOWS X64
+CARRYON 0.1.55-dev — WINDOWS X64
 Development build — no compiler required for the release ZIP
 
 REQUIRES: Enshrouded ModLoader 0.6.15+ (use 0.6.15 for automatic Kiln support).
@@ -33,7 +33,10 @@ Native controls provide preview, positioning, rotation and snapping. Opening
 the map during pickup suspends the preview; teleport to another authorized
 claim, then resume and place. The original object moves only after validation.
 Compatible chests retain contents, decor retains comfort, and supported doors
-and wells retain their native state. Unsupported objects are refused.
+and wells retain their native state. Usable objects also covers supported beds,
+chairs, double beds and multi-seat benches. Every place follows the furniture;
+occupied furniture cannot be moved. Comfort and NPC bed assignments are retained.
+Unsupported objects are refused.
 
 Keep Mods/EnshroudedModLoader/worlds with your world saves. Settings are per-world and remain
 when disabling the mod. Modified loaded settings/mod selection may require

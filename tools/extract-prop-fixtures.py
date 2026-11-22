@@ -31,6 +31,8 @@ for index in range(count):
 
 result = bytearray()
 props = 0
+rest_fixtures = {}
+rest_ids = {"4b6fcb124a52de42aad04d0d767761d3", "e3d4d0024ff04d46a6f5077534be1d24", "18070f4c1f54d144a971e9d7fbaa114f", "1d1ac3c7dd6f3e4f9ba46b961cb5e2fe", "9965cff6b1cc7246a918a4d2fd22210e", "a2eec50bf05ef944b132d2adc6945397"}
 with (game / "enshrouded.kfc_resources").open("rb") as stream:
     for index in range(chunk_count):
         packed, room, length, start, size = struct.unpack_from("<IIIII", header, chunks + index * 20)
@@ -47,6 +49,11 @@ with (game / "enshrouded.kfc_resources").open("rb") as stream:
             if model[8] == 8:
                 result.extend(guid + struct.pack("<I", len(model)) + model)
                 props += 1
+            if guid.hex() in rest_ids:
+                rest_fixtures[guid.hex()] = model
 assert props == 6282, "Different client build: review fixtures and expected coverage"
+assert rest_fixtures.keys() == rest_ids, "Missing native bed/chair fixtures"
 output.write_bytes(result)
+for guid, model in rest_fixtures.items():
+    (output.parent / f"resource-{guid}-0x39768775-0.bin").write_bytes(model)
 print(f"Extracted {props} native Prop fixtures locally; do not publish this file.")

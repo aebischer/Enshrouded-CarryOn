@@ -29,6 +29,8 @@ std::map<void*,TransportCatalogProgress> transportCatalogProgress;
 std::map<Guid,ULONGLONG> transportFloorRetry;
 std::map<Guid,ULONGLONG> transportTemplateRetry;
 std::map<Guid,bool> transportDoorTemplates,transportWellTemplates;
+std::map<Guid,uint8_t> transportRestTemplates;
+std::map<Guid,RestFurnitureDefinition> transportRestAssemblies;
 bool transportMovementEnabled(){return transportChests.load()||transportObjects.load()||transportInteractive.load();}
 std::atomic<bool> transportInspectObjects{false};
 std::atomic<bool> transportActive{false};
@@ -95,8 +97,9 @@ bool transportMissingColorLogged=false;
 // Hashes from reflected type descriptors (+0x90), not guessed item names.
 constexpr uint32_t HighlightType=0xcdfc4fa8;
 constexpr uint32_t InventoryType=0xb19528a9;
-struct TransportPropClass {uint32_t item=0;bool door=false,well=false;};
+struct TransportPropClass {uint32_t item=0;bool door=false,well=false;uint8_t rest=0;};
 TransportPropClass transportClassifyProp(void* world,uint32_t entity,const Byte* descriptor=nullptr);
+uint32_t transportRestRoot(void* world,uint32_t entity);
 const Byte* transportTemplate(void* world,uint32_t entity);
 struct TransportInspectedObject {
  uint64_t id=0;
@@ -207,6 +210,34 @@ float transportDistance(const Byte* a,const Byte* b) {
  }
  return static_cast<float>(std::sqrt(sum));
 }
+// Debug-only observation: no resource preparation, classification or ECS writes.
+// Include refused candidates so an intermittent failure survives a restart in
+// the log instead of leaving only the object's name.
+void transportLogSelection(void* world,const TransportInspectedObject& object,
+                           const transport::Frame& frame,uint64_t selected,const Byte* player) {
+ const auto entity=object.kind==0&&object.id<=UINT32_MAX?static_cast<uint32_t>(object.id):0;
+ const auto descriptor=entity?transportTemplate(world,entity):nullptr;
+ const auto transform=entity?transportComponent(world,entity,transportRenderType,176):ComponentView{};
+ const auto model=entity?transportComponent(world,entity,transportModelType,4):ComponentView{};
+ transport::Placement pose{};
+ if(transform.data){pose.rotation=read<std::array<float,4>>(transform.data,24);pose.scale=read<std::array<float,3>>(transform.data,40);}
+ uint32_t item=0;bool complete=false,unsupported=false,retry=false;
+ {
+  std::lock_guard<std::mutex> lock(transportCatalogMutex);
+  const auto found=transportPlacementCatalog.find(object.model);
+  if(found!=transportPlacementCatalog.end())item=found->second;
+  complete=!transportCatalogRegistries.empty();unsupported=transportUnsupportedFloorModels.count(object.model)!=0;
+  retry=transportFloorRetry.count(object.model)!=0;
+ }
+ char message[640];sprintf_s(message,
+  "CarryOn: selection diagnostic id=%llu selected=%llu candidate=%llu distance=%.3f reach=%.3f family=%u render=%u model=%u pose=%u scale=%.8g/%.8g/%.8g item=%08x catalog_complete=%u unsupported=%u retry=%u enabled=%u/%u/%u",
+  static_cast<unsigned long long>(object.id),static_cast<unsigned long long>(selected),static_cast<unsigned long long>(frame.candidate.entity),
+  player&&transform.data?transportDistance(player,transform.data):-1.0f,frame.reach,descriptor?unsigned(read<Byte>(descriptor,0x20)):255u,
+  unsigned(transform.data!=nullptr),model.data?read<uint32_t>(model.data,0):0,unsigned(transform.data&&pose.movable()),
+  pose.scale[0],pose.scale[1],pose.scale[2],item,unsigned(complete),unsigned(unsupported),unsigned(retry),
+  unsigned(transportChests.load()),unsigned(transportObjects.load()),unsigned(transportInteractive.load()));
+ log(message);
+}
 transport::Candidate transportTargetCandidate(void* context,void* world,const Byte* targets,const Byte* playerTransform) {
  if(!targets||!playerTransform)return {};
   // Interaction target is selected by the game's own reach/occlusion query.
@@ -214,7 +245,8 @@ transport::Candidate transportTargetCandidate(void* context,void* world,const By
   // Preserve the chest interaction slot's priority. The native decor query
   // exposes this counter in slots 0/4, rather than the storage slot 2.
   for(const size_t slot:{size_t(2),size_t(0),size_t(4)}) {
-  const auto id=read<uint64_t>(targets,slot*16);
+  const auto raw=read<uint64_t>(targets,slot*16);
+  const auto id=raw&&raw<=UINT32_MAX?uint64_t(transportRestRoot(world,static_cast<uint32_t>(raw))):raw;
   const auto kind=read<Byte>(targets,slot*16+8);
   if(kind==0 && id && id<=UINT32_MAX &&
      ((slot==2&&transportChests.load()&&transportChestTarget(context,static_cast<uint32_t>(id)))||
@@ -270,10 +302,11 @@ bool transportFrame(void* row,void* cursorContext,bool tab,bool cancel,bool focu
  const auto change=transportSelection.update(frame);
  const auto inspected=transportInspectObjects.load(std::memory_order_relaxed)&&change.active&&
   frame.pincer&&frame.gameplay&&frame.focused?transportInspectTarget(world,targets):TransportInspectedObject{};
- if(inspected.id&&(changedWorld||inspected.id!=transportInspectedObject.id||inspected.kind!=transportInspectedObject.kind||inspected.model!=transportInspectedObject.model)) {
+ if(inspected.id&&(changedWorld||previous!=transportSelection.selected()||inspected.id!=transportInspectedObject.id||inspected.kind!=transportInspectedObject.kind||inspected.model!=transportInspectedObject.model)) {
   char model[33]{};for(size_t i=0;i<16;++i)sprintf_s(model+i*2,3,"%02x",unsigned(inspected.model[i]));
   char message[384];sprintf_s(message,"CarryOn: inspected object name=%s id=%llu kind=%u template=%s",
    inspected.name[0]?inspected.name.data():"-",static_cast<unsigned long long>(inspected.id),unsigned(inspected.kind),model);log(message);
+  transportLogSelection(world,inspected,frame,transportSelection.selected(),playerTransform);
  }
  transportInspectedObject=inspected;
  if(change.clear)transportRestore(context,world);

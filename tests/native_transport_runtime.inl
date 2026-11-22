@@ -8,6 +8,8 @@ struct MoveFixture {
  Byte render[176]{},model[4]{},clientTransform[56]{};
  bool counter=false,missingComfort=false;
  bool door=false,well=false,missingFuel=false;
+ bool rest=false,missingRest=false;
+ Byte restAttachment[48]{},restOffer[56]{},bedAssignment[4]{},guestLink[8]{};
  Byte fuel[16]{},refill[4]{},npcTarget[32]{},animalTarget[8]{};
  Byte offer[12]{},dynamicCollider[24]{},toggle[24]{},children[64]{},childAttachment[112]{},childCollider[24]{},childRecord[0x38]{},childTemplate[0x28]{};
  bool badAttachmentWrite=false;
@@ -36,6 +38,12 @@ static const uint16_t* __fastcall runtimeIndex(void*,const uint32_t* hashValue) 
  static const uint16_t indices[]{0,1,2,3,4,5,6,7,8,9,10,11,12};
  static const uint16_t fuel=21,refill=22,npc=23,animal=24;
  static const uint16_t health=25;
+ static const uint16_t restAttachment=26,restOffer=27,bed=28,guest=29;
+ if(*hashValue==typeHash("keen::ecs::InteractionAttachment"))return &restAttachment;
+ if(*hashValue==typeHash("keen::ecs::InteractionOfferRuntime"))return &restOffer;
+ if(*hashValue==typeHash("keen::ecs::NpcBed"))return &bed;
+ if(*hashValue==typeHash("keen::ecs::InteractionAttachmentGuest"))return &guest;
+ if(*hashValue==typeHash("keen::ecs::DynamicInteractionLock"))return indices+7;
  if(*hashValue==typeHash("keen::ecs::Health"))return &health;
  if(*hashValue==typeHash("keen::ecs::Fuel"))return &fuel;
  if(*hashValue==typeHash("keen::ecs::DynamicFuelSetup"))return &refill;
@@ -70,10 +78,17 @@ static ComponentView* __fastcall runtimeRead(ComponentView* out,void* world,cons
   if(*index==1)*out={f.actorTransform,56};if(*index==5)*out={f.slots,216};return out;
  }
  if(entity==500&&*index==6){*out={f.bar,96};return out;}
+ if(f.rest&&entity==77&&*index==29){*out={f.guestLink,8};return out;}
  if(f.door&&entity==1218) {
   if(*index==16)*out={f.childCollider,24};if(*index==19)*out={f.childAttachment,112};return out;
  }
  if(entity!=1217)return out;
+ if(f.rest&&entity==1217) {
+  if(*index==7)*out={f.lock,2};if(*index==15)*out={f.offer,12};
+  if(*index==23)*out={f.npcTarget,32};if(*index==26&&!f.missingRest)*out={f.restAttachment,48};
+  if(*index==27)*out={f.restOffer,56};if(*index==28)*out={f.bedAssignment,4};
+  if(*index>=15||*index==7)return out;
+ }
  if(f.well) {
   if(*index==21&&!f.missingFuel)*out={f.fuel,16};if(*index==22)*out={f.refill,4};
   if(*index==23)*out={f.npcTarget,32};if(*index==24)*out={f.animalTarget,8};
@@ -141,6 +156,7 @@ static void runtimeSetup(MoveFixture& f) {
  transportFloorPlacements.clear();transportUnsupportedFloorModels.clear();transportFloorProfile.clear();transportResourceDb=nullptr;
  transportCatalogProgress.clear();transportFloorRetry.clear();transportTemplateRetry.clear();
  transportDoorTemplates.clear();transportWellTemplates.clear();transportInteractive=true;
+ transportRestTemplates.clear();transportRestAssemblies.clear();
  transportTypeIndex=&runtimeIndex;transportRead=&runtimeRead;transportStaticRead=&runtimeStatic;
  transportEntitySlot=&runtimeEntitySlot;transportCurrentEntity=&runtimeCurrentEntity;transportWorldWrite=&runtimeWrite;
  transportColliderSlot=&runtimeCollisionSlot;transportColliderMove=&runtimeCollisionMove;

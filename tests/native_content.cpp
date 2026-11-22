@@ -34,6 +34,8 @@ static void testRequest(void* requester,Requests* requests) {
 #include "native_transport_cursor.inl"
 #include "native_transport_runtime.inl"
 #include "native_floor_placement.inl"
+#include "native_rest_furniture.inl"
+#include "native_rest_compound.inl"
 #include "native_transport_input_routing.inl"
 #include "native_pincer_model.inl"
 #include "native_pincer_textures.inl"
@@ -141,6 +143,8 @@ int run(const char* hammerFile,const char* menuFile,const char* iconFile,const c
  testSupportedDecorRuntime();
  testDoorRuntime();
  testWellRuntime();
+ testRestFurnitureRuntime();
+ testRestCompoundRuntime();
  testTeleportRuntime();
  testLiveActorHealth();
  testTransportInterruptions();
@@ -152,6 +156,38 @@ int run(const char* hammerFile,const char* menuFile,const char* iconFile,const c
  std::ifstream doorStream(doorFile,std::ios::binary);
  Bytes door{std::istreambuf_iterator<char>(doorStream),std::istreambuf_iterator<char>()};
  testDoorTemplate(counter,door);
+ {
+  const std::string fixturePath=doorFile;const auto directory=fixturePath.substr(0,fixturePath.find_last_of("/\\")+1);
+  auto loadRest=[&](const char* id){std::ifstream stream(directory+"resource-"+id+"-0x39768775-0.bin",std::ios::binary);CHECK(stream.good());return Bytes(std::istreambuf_iterator<char>(stream),std::istreambuf_iterator<char>());};
+  for(const auto id:{"18070f4c1f54d144a971e9d7fbaa114f","1d1ac3c7dd6f3e4f9ba46b961cb5e2fe"}) {
+   const auto bytes=loadRest(id);RestFurnitureDefinition definition{};
+   const auto flags=restFurnitureTemplate(bytes,&definition);CHECK(flags&RestCompound);CHECK(definition.count==2);
+   if(std::string(id)=="18070f4c1f54d144a971e9d7fbaa114f") {
+    // Read-only native server capture: actual three-place bench and first helper.
+    transport::Placement root{},actual{},expected{};
+    root.position={33008703766528LL,3528395849728LL,13494471622656LL};root.rotation={0,0.707106769f,0,-0.707106769f};
+    actual=root;actual.position={33008702717952LL,3528395849728LL,13491250397184LL};
+    CHECK(transport::restChildPlacement(root,definition.children[0].offset,definition.children[0].rotation,expected));
+    CHECK(transport::restChildMatches(actual,expected));
+    auto invalid=definition.children[0].rotation;invalid[0]=NAN;CHECK(!transport::restChildPlacement(root,definition.children[0].offset,invalid,expected));
+   }
+   assemblyResources.clear();assemblyResources[guid(id)]=bytes;
+   for(size_t i=0;i<definition.count;++i) {
+    char key[33]{};for(size_t j=0;j<16;++j)sprintf_s(key+j*2,3,"%02x",unsigned(definition.children[i].model[j]));
+    const auto helper=loadRest(key);CHECK(restFurnitureTemplate(helper,nullptr,true)&(RestBed|RestSeat));
+    CHECK(!restFurnitureTemplate(helper));assemblyResources[definition.children[i].model]=helper;
+   }
+   MoveFixture f;runtimeSetup(f);runtimeCounter(f);write(f.counterDescriptor,0,guid(id));
+   transportResourceDb=f.registry;const auto savedOpen=originalOpen;const auto savedResolve=originalResolve;
+   originalOpen=&assemblyOpen;originalResolve=&assemblyResolve;
+   const auto classified=transportRestTemplate(f.counterDescriptor);CHECK(classified&RestCompound);
+   CHECK(classified&(std::string(id)=="18070f4c1f54d144a971e9d7fbaa114f"?RestSeat:RestBed));
+   const auto reads=assemblyReads;CHECK(transportRestTemplate(f.counterDescriptor)==classified&&assemblyReads==reads);
+   RestFurnitureDefinition cached{};CHECK(transportRestAssembly(f.counterDescriptor,cached)&&cached.count==2);
+   originalOpen=savedOpen;originalResolve=savedResolve;transportResourceDb=nullptr;
+  }
+  testRestFurnitureTemplate(counter,loadRest("4b6fcb124a52de42aad04d0d767761d3"),loadRest("e3d4d0024ff04d46a6f5077534be1d24"));
+ }
  testWellTemplates(counter,doorFile);
  testQuantizedReplication();
  testPlacementCatalog();

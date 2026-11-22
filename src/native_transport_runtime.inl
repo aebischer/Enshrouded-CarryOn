@@ -26,6 +26,7 @@ struct TransportClientCollisionMove {
  transport::Identity templateId{};
  ULONGLONG lastAttempt=0;
  ULONGLONG lastServerCheck=0;
+ uint32_t restParent=0;
 };
 struct TransportWorldState {
  uintptr_t client=0,server=0;
@@ -290,8 +291,7 @@ void transportCommitMove(TransportMoveRuntime& move,void* world,const void* zone
   transportBoxInClaim(zones,transportRequestClaim(request),move.validation.bounds.data()),nativeValid,true};
  TransportCollisionTarget collision{};
  bool synchronizationReserved=false;
- try {if(move.clientCollisions.size()==move.clientCollisions.capacity())
-   move.clientCollisions.reserve(move.clientCollisions.capacity()?move.clientCollisions.capacity()*2:8);synchronizationReserved=true;}
+ try {move.clientCollisions.reserve(move.clientCollisions.size()+1+current.restChildCount);synchronizationReserved=true;}
  catch(const std::exception&){log("CarryOn: placement refused: synchronization allocation failed");}
  if(nativeValid&&synchronizationReserved&&transport::canCommit(request,validation)&&move.transaction.owns(request)&&
     transportCollisionFor(world,transportServerCollision,current.source.entity,current.collider,collision,current.door)) {
@@ -300,6 +300,20 @@ void transportCommitMove(TransportMoveRuntime& move,void* world,const void* zone
   const auto& scale=request.destination.scale;
   const auto index=transportIndex(world,transportCurrentTransformType);
   if(index&&scale[0]==scale[1]&&scale[0]==scale[2]) {
+   std::array<TransportCollisionTarget,16> childCollisions{};
+   std::array<transport::Placement,16> childDestinations{};
+   std::array<ComponentView,16> childWrites{};
+   bool childrenReady=true;
+   for(size_t i=0;i<current.restChildCount&&childrenReady;++i)
+    childrenReady=transport::restChildPlacement(request.destination,current.childOffsets[i],current.childRotations[i],childDestinations[i])&&
+     transportCollisionFor(world,transportServerCollision,current.children[i],current.childColliders[i],childCollisions[i]);
+   if(!childrenReady)return;
+   // Resolve every child before mutating any pose. Marking a component writable
+   // may schedule replication but does not change its position or interactions.
+   for(size_t i=0;i<current.restChildCount;++i) {
+    transportWorldWrite(&childWrites[i],world,static_cast<Byte*>(world)+0x7bc030,index,current.children[i],0);
+    if(!childWrites[i].data||childWrites[i].size!=56)return;
+   }
    ComponentView attachment{};
    const bool invalidateSupport=current.decor&&read<uint32_t>(current.attachmentState.data(),8)!=0;
    bool attachmentReady=!invalidateSupport;
@@ -311,6 +325,13 @@ void transportCommitMove(TransportMoveRuntime& move,void* world,const void* zone
    ComponentView writable{};
    if(attachmentReady)transportWorldWrite(&writable,world,static_cast<Byte*>(world)+0x7bc030,index,current.source.entity,0);
    if(writable.data&&writable.size==56&&transportMoveCollision(collision,request.destination)) {
+    for(size_t i=0;i<current.restChildCount;++i) {
+     // All collision targets and movable poses were validated above; this
+     // wrapper calls the native void relocation operation without allocation.
+     transportMoveCollision(childCollisions[i],childDestinations[i]);
+     const auto childBytes=transportNativePlacement(childDestinations[i]);
+     std::memcpy(childWrites[i].data,childBytes.data(),childBytes.size());
+    }
     const auto bytes=transportNativePlacement(request.destination);std::memcpy(writable.data,bytes.data(),bytes.size());
     if(invalidateSupport) {
      // Native attach_to_surface caches the support in +8 and skips support
@@ -324,6 +345,12 @@ void transportCommitMove(TransportMoveRuntime& move,void* world,const void* zone
     if(existing!=move.clientCollisions.end())*existing=pending;
     else move.clientCollisions.push_back(pending);
 
+    for(size_t i=0;i<current.restChildCount;++i) {
+     TransportClientCollisionMove childPending{move.world.client,current.children[i],0,childDestinations[i],now,false,read<transport::Identity>(current.childTemplates[i].data(),0)};
+     childPending.restParent=current.source.entity;
+     const auto found=std::find_if(move.clientCollisions.begin(),move.clientCollisions.end(),[&](const auto& p){return p.world==childPending.world&&p.entity==childPending.entity;});
+     if(found!=move.clientCollisions.end())*found=childPending;else move.clientCollisions.push_back(childPending);
+    }
     move.transaction.complete(request.ticket);move.clearMoveData();log("CarryOn: existing object transform committed; components preserved");
    }
   }
@@ -443,7 +470,7 @@ void __fastcall transportDestroyWorld(void* world) {
 // Caller holds transportMoveMutex. Return a registry-owned item, never an
 // actor mutation; each detour keeps its own domain/context preconditions.
 const Byte* transportPlacementItemFor(const TransportMoveRuntime& move,const void* actor,ULONGLONG now) {
- if((move.source.door||move.source.well)?!transportInteractive.load():(move.source.decor?!transportObjects.load():!transportChests.load()))return nullptr;
+ if((move.source.door||move.source.well||move.source.rest)?!transportInteractive.load():(move.source.decor?!transportObjects.load():!transportChests.load()))return nullptr;
  if(!actor||!transportModeActive()||!transportEligible.load()||!transportMovementEnabled()||
     !transportMoveFocused()||move.transaction.stage()!=transport::MoveStage::Preview||
     move.preview.actor!=actor||!move.preview.item||
@@ -508,13 +535,13 @@ bool transportReplicatedPlacement(const transport::Placement& a,const transport:
  constexpr double CosHalfMaxAngle=0.9999976201773518; // 0.25 degrees, q and -q equivalent.
  return std::abs(dot)/std::sqrt(lengthA*lengthB)>=CosHalfMaxAngle;
 }
-bool transportSyncObjectRender(void* world,void* scene,uint32_t entity,const Byte* transform) {
+bool transportSyncObjectRender(void* world,void* scene,uint32_t entity,const Byte* transform,bool helper=false) {
  if(!world||!scene||!transform||!transportModelMove||!transportWorldWrite)return false;
  const auto model=transportComponent(world,entity,transportModelType,4);
  const auto render=transportComponent(world,entity,transportRenderType,176);
  const auto index=transportIndex(world,transportRenderType);
- if(!model.data||!read<uint32_t>(model.data,0)||!render.data||!index)return false;
- const auto handle=read<uint32_t>(model.data,0);
+ if(!render.data||!index||(!helper&&(!model.data||!read<uint32_t>(model.data,0)))||(helper&&model.data))return false;
+ const auto handle=model.data?read<uint32_t>(model.data,0):0;
  ComponentView writable{};
  transportWorldWrite(&writable,world,static_cast<Byte*>(world)+0x7bc030,index,entity,0);
  if(!writable.data||writable.size!=176)return false;
@@ -522,7 +549,7 @@ bool transportSyncObjectRender(void* world,void* scene,uint32_t entity,const Byt
  // Reset all three poses together; retain the native interpolation ticks.
  for(size_t offset:{size_t(0),size_t(56),size_t(112)})std::memcpy(writable.data+offset,transform,56);
  const RenderSpan handles{&handle,1},transforms{transform,1};
- transportModelMove(scene,&handles,&transforms);
+ if(!helper)transportModelMove(scene,&handles,&transforms);
  return true;
 }
 void transportMoveRender(void* world,void* scene) {
@@ -546,7 +573,7 @@ void transportMoveRender(void* world,void* scene) {
   }
   if(delayed&&transport_time::fresh(now,it->lastAttempt,transport_time::SyncRetry)){++i;continue;}
   it->lastAttempt=now;
-  const auto item=transportPlacementItem(world,it->entity);
+  const auto item=it->restParent?0:transportPlacementItem(world,it->entity);
   const auto descriptor=transportTemplate(world,it->entity);
   const auto transform=transportComponent(world,it->entity,transportCurrentTransformType,56);
   static const auto clientColliderType=typeHash("keen::ecs::StaticClientCollider");
@@ -556,10 +583,11 @@ void transportMoveRender(void* world,void* scene) {
   // at the destination; absence is not evidence of an identity mismatch.
   if(!descriptor){++i;continue;}
   if(item!=it->item||!(read<transport::Identity>(descriptor,0)==it->templateId)){remove();continue;}
+  if(it->restParent&&transportRestRoot(world,it->entity)!=it->restParent){++i;continue;}
   TransportCollisionTarget target{};
   if(transform.data&&collider.data&&transportReplicatedPlacement(transportReadPlacement(transform.data),it->destination)&&
      transportCollisionFor(world,transportClientCollision,it->entity,read<uint64_t>(collider.data,8),target,door)&&
-     transportSyncObjectRender(world,scene,it->entity,transform.data)&&
+     transportSyncObjectRender(world,scene,it->entity,transform.data,it->restParent!=0)&&
      transportMoveCollision(target,transportReadPlacement(transform.data))) {
    log("CarryOn: object render pose and client collision synchronized");remove();
   }

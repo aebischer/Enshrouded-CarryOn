@@ -7,6 +7,8 @@
 #include "transport_selection.h"
 #include "transport_move.h"
 #include "floor_placement.h"
+#include "rest_furniture.h"
+#include "rest_placement.h"
 #include <fstream>
 #include <map>
 #include <set>

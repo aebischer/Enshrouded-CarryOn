@@ -16,6 +16,8 @@ static uint32_t testVoxel[2]{88,1};
 static uint32_t testModelHandle=77,testDrawHandle=0;
 static Byte testDrawColor=0;
 static unsigned testDrawCalls=0;
+static std::string testSelectionLog;
+static void __cdecl captureSelectionLog(const char* message){testSelectionLog+=message;testSelectionLog+='\n';}
 static void* testRenderScene=nullptr;
 static unsigned testRenderSystems=0;
 static void __fastcall testRenderSystem(void*) {++testRenderSystems;testDrawColor=0;}
@@ -140,6 +142,15 @@ static void testTransport(const char* fixtureFile) {
  testTargetReads=0;frame(false);CHECK(!transportSelection.active() && !testWrites&&!testTargetReads);
  frame(true);CHECK(transportSelection.active());
  CHECK(transportSelection.selected()==TestEntity && testColor==2 && testWrites==1);
+ // Inspection must not authorize selection or write to game components.
+ const auto savedLogger=logger;logger=&captureSelectionLog;testSelectionLog.clear();
+ for(bool debug:{true,false,true,false}) {
+  transportInspectObjects=debug;frame(true);
+  CHECK(transportSelection.selected()==TestEntity&&testColor==2&&testWrites==1);
+ }
+ CHECK(testSelectionLog.find("selection diagnostic")!=std::string::npos);
+ CHECK(testSelectionLog.find("distance=2.000 reach=3.000")!=std::string::npos);
+ logger=savedLogger;
  CHECK(std::strcmp(text(hash(TransportEnter),5),"Quitter le mode transport")==0);
  frame(true);CHECK(testWrites==1 && transportSelection.active());
  testColor=0;frame(true);CHECK(testColor==2 && testWrites==2);

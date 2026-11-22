@@ -1,9 +1,14 @@
 # CarryOn for Enshrouded
 
-Development version **0.1.52-dev**, a Windows x64 mod for
+Development version **0.1.55-dev**, a Windows x64 mod for
 [Enshrouded ModLoader](https://github.com/aebischer/Enshrouded-ModLoader)
 0.6.15 or later, SDK V1 / ABI 1.
 Currently intended for solo play; dedicated servers and multiplayer are not certified.
+
+0.1.55 adds supported double beds and multi-seat benches to Usable objects. It retains the
+Debug-only selection diagnostics introduced in 0.1.53; the intermittent
+sideboard refusal is not claimed fixed. See [beds and seats](docs/BEDS-AND-SEATS.md)
+and [selection diagnostics](docs/SELECTION-DIAGNOSTICS.md).
 
 Move chests with their contents and compatible world objects using craftable
 **Transport pincers**, a native placement preview and the game's placement controls.
@@ -38,7 +43,7 @@ Kiln-hosted frameworks, multiplayer or future game/Kiln builds.
 ## Install without compiling
 
 Download the compiled ZIP from
-[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.52-dev), install
+[Releases](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.55-dev), install
 ModLoader separately, then follow [INSTALLATION.txt](INSTALLATION.txt).
 Both repositories and their downloads are public; no GitHub account is required.
 
@@ -74,7 +79,7 @@ text, held model and native orange orb at the joint.
 
 The real object stays at its original location until placement is committed.
 Movement preserves its entity and components, including chest contents,
-decor comfort and supported door/well behavior. Cancelling the preview does
+decor comfort and supported usable-object behavior. Cancelling the preview does
 not create an inventory item or move the original object.
 
 The map and teleport loading suspend commands. Resuming requires a fresh
@@ -91,7 +96,7 @@ In **Edit → MODS → CarryOn**:
 |---|---|---|
 | `move_chests` | Chests, including supported magical variants | Enabled |
 | `move_objects` | Compatible non-voxel decor | Enabled |
-| `move_interactive` | Usable objects: supported doors and wells | Enabled |
+| `move_interactive` | Usable objects: supported doors, wells, beds and seats, including supported multi-place furniture | Enabled |
 | `inspect_objects` | Debug: internal name, target ID and model GUID | Disabled |
 
 The inspector works in transport mode even for an immovable target or outside
@@ -99,6 +104,10 @@ a claim. It depends on the native targeting query; unresolved models retain
 a raw ID. Targets are also logged. No editable object list is required:
 `objects.txt` is no longer read or distributed. A model name alone never grants
 movement permission; the native component contract must be compatible.
+
+Beds and seats must be unoccupied. Their existing entity, comfort and NPC bed
+assignments are retained. Supported multi-place furniture moves together with
+all its interaction places. An occupied place blocks the entire move.
 
 All custom text covers the game's 15 interface languages. The catalogue is
 `assets/localization/texts.json`; native controls retain the game's translations.
@@ -120,8 +129,10 @@ make voxels or unrelated object families movable.
 
 Doors use their native Switch path, retaining opening state and leaf links.
 Wells are identified by their water-drawing contract (family 13), without a name
-allowlist; wells in use by an NPC or animal are rejected. Other interactive
-objects require investigation of their native components.
+allowlist; wells in use by an NPC or animal are rejected. Beds, chairs and
+compatible multi-place benches use their native sit/sleep interactions. Every
+place moves with the furniture, preserving comfort and NPC bed assignments.
+Occupied furniture is refused. Unsupported interactive objects remain excluded.
 
 Supported `enshrouded.exe` SHA-256:
 
@@ -166,6 +177,13 @@ confirmed in 0.1.45. Later fixes through 0.1.49 passed offline checks; full in-g
 verification of interruptions, performance and new translations remains pending.
 
 ## Recent changes
+
+- **0.1.55:** Usable objects now includes supported beds, chairs, double beds and
+  multi-seat benches, alongside doors and wells. Compound furniture keeps its
+  interaction places together, with occupancy checks and synchronized collisions.
+  The tester confirmed operation in-game; the offline suite also covers rotation,
+  failed preflight, native respawn offsets and preserved NPC assignments.
+- **0.1.53:** additional selection diagnostics when Debug is enabled.
 
 - **0.1.47:** transport protections and cleanup; see [corrections](docs/CORRECTIONS-0.1.47.md).
 - **0.1.48:** recoverable allocation failures, throttled missing reads, fewer
@@ -220,7 +238,7 @@ merge this release's `Mods` directory into the game directory. Do not delete
 
 The 0.1.50 update changed distribution paths without changing gameplay. The
 current release also includes the pickup and chest selection fixes above.
-Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.52-dev).
+Download the [compiled package](https://github.com/aebischer/Enshrouded-CarryOn/releases/tag/v0.1.55-dev).
 
 ## World profiles migration (ModLoader 0.6.15)
 
